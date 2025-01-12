@@ -4,18 +4,33 @@ import pandas as pd
 from datetime import datetime
 
 
-MATCH_YEAR = 2024
+DATA_ANALYSIS_YEAR = 2024
 CLUB_REF = "team-scotland"
 CLUB_NAME = "Team Scotland"
 
 
 # Need to set a User-Agent or the API will return 403 Forbidden
+# Could use anything but chose a Chrome user agent to fly below the radar
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
 }
 
 
-def fetch_team_scotland_members():
+# Decoration wrapper to calculate total execution time
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+
+        print(f"Execution time: {(end_time - start_time):.2f} seconds")
+
+        return result
+    return wrapper
+
+
+# Fetch a list of all club members 
+def fetch_all_club_members():
     url = f"https://api.chess.com/pub/club/{CLUB_REF}/members"
 
     response = requests.get(url, headers=headers)
@@ -28,6 +43,7 @@ def fetch_team_scotland_members():
         return []
 
 
+# Fetch the daily rating for a member
 def fetch_member_rating(username):
     url = f"https://api.chess.com/pub/player/{username}/stats"
     response = requests.get(url, headers=headers)
@@ -40,6 +56,7 @@ def fetch_member_rating(username):
         return 'N/A'
 
 
+# Fetch the last online date for a member
 def fetch_member_last_online(username):
     url = f"https://api.chess.com/pub/player/{username}"
     response = requests.get(url, headers=headers)
@@ -53,6 +70,7 @@ def fetch_member_last_online(username):
         return 'N/A'
 
 
+# Fetch the date a member joined the club
 def fetch_member_joined_date(username):
     url = f"https://api.chess.com/pub/player/{username}"
     response = requests.get(url, headers=headers)
@@ -66,21 +84,23 @@ def fetch_member_joined_date(username):
         return 'N/A'
 
 
-def fetch_team_scotland_matches():
+# Fetch all matches for the club in a given year
+def fetch_club_matches_in_year(year):
     url = f"https://api.chess.com/pub/club/{CLUB_REF}/matches"
 
     response = requests.get(url, headers=headers)
     
     if response.status_code == 200:
         all_matches = response.json().get('finished', [])
-        matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == MATCH_YEAR]
+        matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == year]
         return matches_in_year
     else:
         print(f"Failed to fetch matches: {response.status_code}")
         return []
 
 
-def fetch_match_participants(match_url):
+# Fetch the match data listing participants and results 
+def fetch_match_data(match_url):
     response = requests.get(match_url, headers=headers)
 
     if response.status_code == 200:
@@ -109,17 +129,16 @@ def fetch_match_participants(match_url):
     return set()
 
 
+# Calculate the participation percentage for a member against club matches
 def calculate_participation_percentage(matches_played, matches_participated):
     if matches_played == 0:
         return 0
     return round((matches_participated / matches_played) * 100, 2)
 
 
-def export_to_excel(members_data, matches_data, filename=f"{CLUB_NAME} Data Extract {MATCH_YEAR}.xlsx"):
-    # Export member data
+# Export the data to an Excel file
+def export_to_excel(members_data, matches_data, filename="default.xlsx"):
     df_members = pd.DataFrame(members_data)
-    
-    # Export matches data
     df_matches = pd.DataFrame(matches_data)
     
     with pd.ExcelWriter(filename) as writer:
@@ -127,37 +146,35 @@ def export_to_excel(members_data, matches_data, filename=f"{CLUB_NAME} Data Extr
         df_matches.to_excel(writer, sheet_name='Match Data', index=False)
 
 
+@calculate_execution_time
 def main():
-    # members = [
-    #     {'username': 'leighdastey'}, 
-    #     {'username': 'andrewmoulden'}, 
-    #     {'username': 'jules64'},
-    #     {'username': 'supermashedpotato'} # timeouter for testing...
-    # ]  # Testing for time 
-    members = fetch_team_scotland_members()
+    # members = [{'username': 'leighdastey'}, {'username': 'andrewmoulden'}, 
+    #     {'username': 'jules64'}, {'username': 'supermashedpotato'}]  # Test users  
+    members = fetch_all_club_members()
 
     total_matches = 0
     members_participation = {member['username']: 0 for member in members}
     members_timeouts = {member['username']: 0 for member in members}
 
-    matches = fetch_team_scotland_matches()
+    matches = fetch_club_matches_in_year(DATA_ANALYSIS_YEAR)
     total_matches = len(matches)
 
+    # TODO: try to optimise this to be less than O(n^2)
     matches_data = []
     for match in matches:
-        total_matches += 1
-
         match_name = match['name']
         match_url = match['@id']
         match_info = {'Match Name': match_name, 'Match URL': match_url}
 
-        participants = fetch_match_participants(match_url)
+        match_data = fetch_match_data(match_url)
         
         for member in members:
-            if member['username'] in participants:
+            if member['username'] in match_data:
                 members_participation[member['username']] += 1
-                result_white = participants[member['username']]['result_white']
-                result_black = participants[member['username']]['result_black']
+                
+                result_white = match_data[member['username']]['result_white']
+                result_black = match_data[member['username']]['result_black']
+
                 match_info[f"{member['username']}_white"] = result_white
                 match_info[f"{member['username']}_black"] = result_black
 
@@ -185,8 +202,8 @@ def main():
             members_participation[member['username']])
     } for member in members]
 
-    export_to_excel(members_data, matches_data)
-
+    export_to_excel(members_data, matches_data, f"{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}.xlsx")
+    print("Data exported ... program executed successfully")
 
 
 if __name__ == "__main__":
