@@ -1,0 +1,193 @@
+import time 
+import requests
+import pandas as pd
+from datetime import datetime
+
+
+MATCH_YEAR = 2024
+CLUB_REF = "team-scotland"
+CLUB_NAME = "Team Scotland"
+
+
+# Need to set a User-Agent or the API will return 403 Forbidden
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+}
+
+
+def fetch_team_scotland_members():
+    url = f"https://api.chess.com/pub/club/{CLUB_REF}/members"
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        members = response.json().get('weekly', []) + response.json().get('monthly', []) + response.json().get('all_time', [])
+        return members
+    else:
+        print(f"Failed to fetch members: {response.status_code}")
+        return []
+
+
+def fetch_member_rating(username):
+    url = f"https://api.chess.com/pub/player/{username}/stats"
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        stats = response.json()
+        return stats.get('chess_daily', {}).get('last', {}).get('rating', 'N/A')
+    else:
+        print(f"Failed to fetch rating for {username}: {response.status_code}")
+        return 'N/A'
+
+
+def fetch_member_last_online(username):
+    url = f"https://api.chess.com/pub/player/{username}"
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        profile = response.json()
+        last_online = profile.get('last_online', 0)
+        return datetime.utcfromtimestamp(last_online).strftime('%d/%m/%Y')
+    else:
+        print(f"Failed to fetch last online for {username}: {response.status_code}")
+        return 'N/A'
+
+
+def fetch_member_joined_date(username):
+    url = f"https://api.chess.com/pub/player/{username}"
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        profile = response.json()
+        joined_date = profile.get('joined', 0)
+        return datetime.utcfromtimestamp(joined_date).strftime('%d/%m/%Y')
+    else:
+        print(f"Failed to fetch joined date for {username}: {response.status_code}")
+        return 'N/A'
+
+
+def fetch_team_scotland_matches():
+    url = f"https://api.chess.com/pub/club/{CLUB_REF}/matches"
+
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        all_matches = response.json().get('finished', [])
+        matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == MATCH_YEAR]
+        return matches_in_year
+    else:
+        print(f"Failed to fetch matches: {response.status_code}")
+        return []
+
+
+def fetch_match_participants(match_url):
+    response = requests.get(match_url, headers=headers)
+
+    if response.status_code == 200:
+        match_data = response.json()
+        participants = {}
+        teams = match_data.get('teams', {})
+        team_scotland = None
+
+        if teams.get('team1', {}).get('name') == CLUB_NAME:
+            team_scotland = teams.get('team1', {})
+        elif teams.get('team2', {}).get('name') == CLUB_NAME:
+            team_scotland = teams.get('team2', {})
+
+        if team_scotland:
+            for player in team_scotland.get('players', []):
+                username = player['username']
+                result_white = player.get('played_as_white', {})
+                result_black = player.get('played_as_black', {})
+                
+                participants[username] = {
+                    'result_white': result_white, 'result_black': result_black
+                }
+
+
+        return participants
+    return set()
+
+
+def calculate_participation_percentage(matches_played, matches_participated):
+    if matches_played == 0:
+        return 0
+    return round((matches_participated / matches_played) * 100, 2)
+
+
+def export_to_excel(members_data, matches_data, filename=f"{CLUB_NAME} Data Extract {MATCH_YEAR}.xlsx"):
+    # Export member data
+    df_members = pd.DataFrame(members_data)
+    
+    # Export matches data
+    df_matches = pd.DataFrame(matches_data)
+    
+    with pd.ExcelWriter(filename) as writer:
+        df_members.to_excel(writer, sheet_name='Member Metrics', index=False)
+        df_matches.to_excel(writer, sheet_name='Match Data', index=False)
+
+
+def main():
+    # members = [
+    #     {'username': 'leighdastey'}, 
+    #     {'username': 'andrewmoulden'}, 
+    #     {'username': 'jules64'},
+    #     {'username': 'supermashedpotato'} # timeouter for testing...
+    # ]  # Testing for time 
+    members = fetch_team_scotland_members()
+
+    total_matches = 0
+    members_participation = {member['username']: 0 for member in members}
+    members_timeouts = {member['username']: 0 for member in members}
+
+    matches = fetch_team_scotland_matches()
+    total_matches = len(matches)
+
+    matches_data = []
+    for match in matches:
+        total_matches += 1
+
+        match_name = match['name']
+        match_url = match['@id']
+        match_info = {'Match Name': match_name, 'Match URL': match_url}
+
+        participants = fetch_match_participants(match_url)
+        
+        for member in members:
+            if member['username'] in participants:
+                members_participation[member['username']] += 1
+                result_white = participants[member['username']]['result_white']
+                result_black = participants[member['username']]['result_black']
+                match_info[f"{member['username']}_white"] = result_white
+                match_info[f"{member['username']}_black"] = result_black
+
+                # Check for timeouts
+                if result_white == 'timeout':
+                    members_timeouts[member['username']] += 1
+                
+                if result_black == 'timeout':
+                    members_timeouts[member['username']] += 1
+            else:
+                match_info[f"{member['username']}_white"] = 'not played'
+                match_info[f"{member['username']}_black"] = 'not played'
+        
+        matches_data.append(match_info)
+
+    members_data = [{
+        'Username': member['username'], 
+        'Join Date': fetch_member_joined_date(member['username']), 
+        'Daily Rating': fetch_member_rating(member['username']),
+        'Last Online': fetch_member_last_online(member['username']),
+        'Timeouts': members_timeouts.get(member['username'], 0),
+        'Total Matches': total_matches, 
+        'Participation %': calculate_participation_percentage(
+            total_matches, 
+            members_participation[member['username']])
+    } for member in members]
+
+    export_to_excel(members_data, matches_data)
+
+
+
+if __name__ == "__main__":
+    main()
