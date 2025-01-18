@@ -1,3 +1,4 @@
+import os
 import time 
 import requests
 import pandas as pd
@@ -23,14 +24,18 @@ def calculate_execution_time(func):
         result = func(*args, **kwargs)
         end_time = time.time()
 
-        print(f"Execution time: {(end_time - start_time):.2f} seconds")
+        print(
+            f"Execution time: "
+            f"\n{(end_time - start_time):.2f} seconds"
+            f"\n{(end_time - start_time)/60:.2f} minutes"
+        )
 
         return result
     return wrapper
 
 
-# Fetch a list of all club members 
-def fetch_all_club_members():
+# Returns a list of all club members 
+def get_all_club_members():
     url = f"https://api.chess.com/pub/club/{CLUB_REF}/members"
 
     response = requests.get(url, headers=headers)
@@ -43,8 +48,8 @@ def fetch_all_club_members():
         return []
 
 
-# Fetch the daily rating for a member
-def fetch_member_rating(username):
+# Returns the daily rating for a member
+def get_member_daily_rating(username):
     url = f"https://api.chess.com/pub/player/{username}/stats"
     response = requests.get(url, headers=headers)
     
@@ -56,8 +61,8 @@ def fetch_member_rating(username):
         return 'N/A'
 
 
-# Fetch the last online date for a member
-def fetch_member_last_online(username):
+# Returns the last online date for a member
+def get_member_last_online(username):
     url = f"https://api.chess.com/pub/player/{username}"
     response = requests.get(url, headers=headers)
     
@@ -70,8 +75,8 @@ def fetch_member_last_online(username):
         return 'N/A'
 
 
-# Fetch the date a member joined the club
-def fetch_member_joined_date(username):
+# Returns the date a member joined the club
+def get_member_joined_date(username):
     url = f"https://api.chess.com/pub/player/{username}"
     response = requests.get(url, headers=headers)
     
@@ -84,8 +89,8 @@ def fetch_member_joined_date(username):
         return 'N/A'
 
 
-# Fetch all matches for the club in a given year
-def fetch_club_matches_in_year(year):
+# Returns all matches for the club in a given year
+def get_all_club_matches_in_year(year):
     url = f"https://api.chess.com/pub/club/{CLUB_REF}/matches"
 
     response = requests.get(url, headers=headers)
@@ -99,8 +104,8 @@ def fetch_club_matches_in_year(year):
         return []
 
 
-# Fetch the match data listing participants and results 
-def fetch_match_data(match_url):
+# Returns match data listing participants and results 
+def get_match_data(match_url):
     response = requests.get(match_url, headers=headers)
 
     if response.status_code == 200:
@@ -117,8 +122,8 @@ def fetch_match_data(match_url):
         if team_scotland:
             for player in team_scotland.get('players', []):
                 username = player['username']
-                result_white = player.get('played_as_white', {})
-                result_black = player.get('played_as_black', {})
+                result_white = player.get('played_as_white', 'in progress')
+                result_black = player.get('played_as_black', 'in progress')
                 
                 participants[username] = {
                     'result_white': result_white, 'result_black': result_black
@@ -137,7 +142,7 @@ def calculate_participation_percentage(matches_played, matches_participated):
 
 
 # Export the data to an Excel file
-def export_to_excel(members_data, matches_data, filename="default.xlsx"):
+def export_to_excel(members_data, matches_data, filename="output/default.xlsx"):
     df_members = pd.DataFrame(members_data)
     df_matches = pd.DataFrame(matches_data)
     
@@ -150,13 +155,13 @@ def export_to_excel(members_data, matches_data, filename="default.xlsx"):
 def main():
     # members = [{'username': 'leighdastey'}, {'username': 'andrewmoulden'}, 
     #     {'username': 'jules64'}, {'username': 'supermashedpotato'}]  # Test users  
-    members = fetch_all_club_members()
+    members = get_all_club_members()
 
     total_matches = 0
     members_participation = {member['username']: 0 for member in members}
     members_timeouts = {member['username']: 0 for member in members}
 
-    matches = fetch_club_matches_in_year(DATA_ANALYSIS_YEAR)
+    matches = get_all_club_matches_in_year(DATA_ANALYSIS_YEAR)
     total_matches = len(matches)
 
     # TODO: try to optimise this to be less than O(n^2)
@@ -166,7 +171,7 @@ def main():
         match_url = match['@id']
         match_info = {'Match Name': match_name, 'Match URL': match_url}
 
-        match_data = fetch_match_data(match_url)
+        match_data = get_match_data(match_url)
         
         for member in members:
             if member['username'] in match_data:
@@ -192,9 +197,9 @@ def main():
 
     members_data = [{
         'Username': member['username'], 
-        'Join Date': fetch_member_joined_date(member['username']), 
-        'Daily Rating': fetch_member_rating(member['username']),
-        'Last Online': fetch_member_last_online(member['username']),
+        'Join Date': get_member_joined_date(member['username']), 
+        'Daily Rating': get_member_daily_rating(member['username']),
+        'Last Online': get_member_last_online(member['username']),
         'Timeouts': members_timeouts.get(member['username'], 0),
         'Total Matches': total_matches, 
         'Participation %': calculate_participation_percentage(
@@ -202,7 +207,8 @@ def main():
             members_participation[member['username']])
     } for member in members]
 
-    export_to_excel(members_data, matches_data, f"{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}.xlsx")
+    os.makedirs('output', exist_ok=True) 
+    export_to_excel(members_data, matches_data, f"output/{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}.xlsx")
     print("Data exported ... program executed successfully")
 
 
