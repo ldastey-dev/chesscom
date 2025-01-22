@@ -153,7 +153,7 @@ def main(club, match_id):
     df = pd.DataFrame(results)
 
     os.makedirs('output', exist_ok=True) 
-    df.to_excel(f"output/Member Eligibility.xlsx", index=False)
+    df.to_excel(f"output/Match Eligibility.xlsx", index=False)
 
 
 if __name__ == "__main__":

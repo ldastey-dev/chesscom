@@ -3,11 +3,16 @@ import time
 import requests
 import pandas as pd
 from datetime import datetime
+from dotenv import load_dotenv
 
 
-DATA_ANALYSIS_YEAR = 2024
-CLUB_REF = "team-scotland"
-CLUB_NAME = "Team Scotland"
+load_dotenv()
+
+
+# Environment variables
+CLUB_REF = os.getenv('CLUB_REF')
+CLUB_NAME = os.getenv('CLUB_NAME')
+DATA_ANALYSIS_YEAR = os.getenv('DATA_ANALYSIS_YEAR')
 
 
 # Need to set a User-Agent or the API will return 403 Forbidden
