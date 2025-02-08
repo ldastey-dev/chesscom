@@ -27,7 +27,7 @@ def install_requirements():
     if os.path.exists(requirements_path):
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', '-r', requirements_path])
     else:
-        print("requirements.txt not found\n")
+        print("requirements.txt not found\r")
 
 
 # Prevent the system from sleeping
@@ -42,7 +42,7 @@ def disable_system_sleep():
                 '--why="Running Python program"', 'sleep', 'infinity'
             ])
         except Exception as e:
-            print(f"Failed to inhibit sleep: {e}\n")
+            print(f"Failed to inhibit sleep: {e}\r")
 
 
 # Allow the system to sleep
@@ -54,7 +54,7 @@ def enable_system_sleep():
         try:
             subprocess.Popen(['sudo', 'pkill', '-f', 'systemd-inhibit'])
         except Exception as e:
-            print(f"Failed to allow sleep: {e}\n")
+            print(f"Failed to allow sleep: {e}\r")
 
 
 # Decoration wrapper to calculate total execution time
@@ -66,14 +66,14 @@ def calculate_execution_time(func):
             disable_system_sleep()
             result = func(*args, **kwargs)
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error: {e}\r")
             result = None
         finally:
             end_time = time.time()
             execution_time = end_time - start_time
             
-            print(f"Execution time: {execution_time:.2f} seconds\n")
-            print(f"Execution time: {(execution_time/60):.2f} minutes\n")
+            print(f"Execution time: {execution_time:.2f} seconds\r")
+            print(f"Execution time: {(execution_time/60):.2f} minutes\r")
             
             enable_system_sleep()
         
@@ -88,15 +88,15 @@ def get_unique_filename(folder, fname, extension):
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Construct the path to requirements.txt relative to the base directory
+    # Construct the path  relative to the base directory
     path = f'{os.path.join(base_dir, '..', '..')}/{folder}'
     
     file = f"{path}/{fname}.{extension}"
 
-    os.makedirs(folder, exist_ok=True)
+    os.makedirs(path, exist_ok=True)
 
     while os.path.exists(file):
-        file = f"{folder}/{fname}_{counter}.{extension}"
+        file = f"{path}/{fname}_{counter}.{extension}"
         counter += 1
     return file
 
@@ -114,5 +114,5 @@ def request_handler(url, headers=None, retries=3, backoff_factor=0.3):
                 sleep_time = backoff_factor * (2 ** attempt)
                 time.sleep(sleep_time)
             else:
-                print(f'Failed to fetch data from {url}\n')
+                print(f'Failed to fetch data from {url}\r')
                 raise e

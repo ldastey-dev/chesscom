@@ -1,5 +1,6 @@
 import os
 import time 
+import utils
 import requests
 import pandas as pd
 from datetime import datetime
@@ -15,103 +16,113 @@ CLUB_NAME = os.getenv('CLUB_NAME')
 DATA_ANALYSIS_YEAR = os.getenv('DATA_ANALYSIS_YEAR')
 
 
-# Need to set a User-Agent or the API will return 403 Forbidden
-# Could use anything but chose a Chrome user agent to fly below the radar
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
-}
-
-
-# Decoration wrapper to calculate total execution time
-def calculate_execution_time(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-
-        print(
-            f"Execution time: "
-            f"\n{(end_time - start_time):.2f} seconds"
-            f"\n{(end_time - start_time)/60:.2f} minutes"
-        )
-
-        return result
-    return wrapper
-
-
 # Returns a list of all club members 
 def get_all_club_members():
-    url = f"https://api.chess.com/pub/club/{CLUB_REF}/members"
+    url = f'https://api.chess.com/pub/club/{CLUB_REF}/members'
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=utils.headers)
 
     if response.status_code == 200:
         members = response.json().get('weekly', []) + response.json().get('monthly', []) + response.json().get('all_time', [])
         return members
     else:
-        print(f"Failed to fetch members: {response.status_code}")
+        print(f'Failed to fetch members: {response.status_code}\n')
         return []
 
 
 # Returns the daily rating for a member
 def get_member_daily_rating(username):
-    url = f"https://api.chess.com/pub/player/{username}/stats"
-    response = requests.get(url, headers=headers)
+    url = f'https://api.chess.com/pub/player/{username}/stats'
+
+    response = requests.get(url, headers=utils.headers)
     
     if response.status_code == 200:
         stats = response.json()
         return stats.get('chess_daily', {}).get('last', {}).get('rating', 'N/A')
     else:
-        print(f"Failed to fetch rating for {username}: {response.status_code}")
+        print(f'Failed to fetch rating for {username}: {response.status_code}\n')
         return 'N/A'
 
 
 # Returns the last online date for a member
 def get_member_last_online(username):
-    url = f"https://api.chess.com/pub/player/{username}"
-    response = requests.get(url, headers=headers)
+    url = f'https://api.chess.com/pub/player/{username}'
+
+    response = requests.get(url, headers=utils.headers)
     
     if response.status_code == 200:
         profile = response.json()
         last_online = profile.get('last_online', 0)
-        return datetime.utcfromtimestamp(last_online).strftime('%d/%m/%Y')
+        return datetime.fromtimestamp(last_online).strftime('%d/%m/%Y')
     else:
-        print(f"Failed to fetch last online for {username}: {response.status_code}")
+        print(f'Failed to fetch last online for {username}: {response.status_code}\n')
         return 'N/A'
 
 
+def get_timeout_percentage(username):
+    url = f'https://api.chess.com/pub/player/{username}/stats'
+
+    response = requests.get(url, headers=utils.headers)
+    
+    if response.status_code == 200:
+        stats = response.json().get('chess_daily', {})
+        timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
+        return timeout_percent
+    else:
+        print(f'Failed to fetch stats for {username}: {response.status_code}\n')
+        return None
+
+
 # Returns the date a member joined the club
-def get_member_joined_date(username):
-    url = f"https://api.chess.com/pub/player/{username}"
-    response = requests.get(url, headers=headers)
+def get_chesscom_joined_date(username):
+    url = f'https://api.chess.com/pub/player/{username}'
+
+    response = requests.get(url, headers=utils.headers)
     
     if response.status_code == 200:
         profile = response.json()
         joined_date = profile.get('joined', 0)
-        return datetime.utcfromtimestamp(joined_date).strftime('%d/%m/%Y')
+        return datetime.fromtimestamp(joined_date).strftime('%d/%m/%Y')
     else:
-        print(f"Failed to fetch joined date for {username}: {response.status_code}")
+        print(f'Failed to fetch joined date for {username}: {response.status_code}\n')
         return 'N/A'
+
+
+def get_member_joined_club(club, username):
+    url = f'https://api.chess.com/pub/club/{club}/members'
+
+    response = requests.get(url, headers=utils.headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        all_members = data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
+        
+        for member in all_members:
+            if member.get('username') == username:
+                joined_timestamp = member.get('joined', 0)
+                return datetime.fromtimestamp(joined_timestamp).strftime('%d/%m/%Y')
+    
+    return None
 
 
 # Returns all matches for the club in a given year
 def get_all_club_matches_in_year(year):
-    url = f"https://api.chess.com/pub/club/{CLUB_REF}/matches"
+    url = f'https://api.chess.com/pub/club/{CLUB_REF}/matches'
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=utils.headers)
     
     if response.status_code == 200:
         all_matches = response.json().get('finished', [])
         matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == year]
         return matches_in_year
     else:
-        print(f"Failed to fetch matches: {response.status_code}")
+        print(f'Failed to fetch matches: {response.status_code}\n')
         return []
 
 
 # Returns match data listing participants and results 
 def get_match_data(match_url):
-    response = requests.get(match_url, headers=headers)
+    response = requests.get(match_url, headers=utils.headers)
 
     if response.status_code == 200:
         match_data = response.json()
@@ -147,7 +158,7 @@ def calculate_participation_percentage(matches_played, matches_participated):
 
 
 # Export the data to an Excel file
-def export_to_excel(members_data, matches_data, filename="output/default.xlsx"):
+def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
     df_members = pd.DataFrame(members_data)
     df_matches = pd.DataFrame(matches_data)
     
@@ -156,7 +167,7 @@ def export_to_excel(members_data, matches_data, filename="output/default.xlsx"):
         df_matches.to_excel(writer, sheet_name='Match Data', index=False)
 
 
-@calculate_execution_time
+@utils.calculate_execution_time
 def main():
     # members = [{'username': 'leighdastey'}, {'username': 'andrewmoulden'}, 
     #     {'username': 'jules64'}, {'username': 'supermashedpotato'}]  # Test users  
@@ -202,19 +213,21 @@ def main():
 
     members_data = [{
         'Username': member['username'], 
-        'Join Date': get_member_joined_date(member['username']), 
         'Daily Rating': get_member_daily_rating(member['username']),
+        'Joined Chess.com': get_chesscom_joined_date(member['username']), 
+        'Joined Club': get_member_joined_club(CLUB_REF, member['username']),
         'Last Online': get_member_last_online(member['username']),
-        'Timeouts': members_timeouts.get(member['username'], 0),
+        'Timeout Percentage': get_timeout_percentage(member['username']),
+        'Club Timeouts': members_timeouts.get(member['username'], 0),
         'Total Matches': total_matches, 
         'Participation %': calculate_participation_percentage(
             total_matches, 
             members_participation[member['username']])
     } for member in members]
 
-    os.makedirs('output', exist_ok=True) 
-    export_to_excel(members_data, matches_data, f"output/{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}.xlsx")
-    print("Data exported ... program executed successfully")
+    file = utils.get_unique_filename('output', f'{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}', 'xlsx')
+    export_to_excel(members_data, matches_data, file)
+    print(f'Data exported to {file} ... program executed successfully\r')
 
 
 if __name__ == "__main__":
