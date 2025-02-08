@@ -1,4 +1,6 @@
 output
 **/.env
+**/.venv
 **/*.xls*
+**/.vscode
 **/__pycache__

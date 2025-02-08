@@ -9,7 +9,7 @@ headers = utils.headers
 
 
 def fetch_club_members(club):
-    url = f"https://api.chess.com/pub/club/{club}/members"
+    url = f'https://api.chess.com/pub/club/{club}/members'
 
     response = requests.get(url, headers=headers)
     
@@ -20,7 +20,7 @@ def fetch_club_members(club):
 
 
 def fetch_member_info(username, club):
-    url = f"https://api.chess.com/pub/player/{username}/stats"
+    url = f'https://api.chess.com/pub/player/{username}/stats'
 
     response = requests.get(url, headers=headers)
 
@@ -32,7 +32,7 @@ def fetch_member_info(username, club):
         rating = 0
         timeout_percent = 0
 
-    url = f"https://api.chess.com/pub/player/{username}"
+    url = f'https://api.chess.com/pub/player/{username}'
 
     response = requests.get(url, headers=headers)
 
@@ -92,12 +92,12 @@ def main(clubs, exclusion_club):
 
     file = utils.get_unique_filename('output', 'Member Prospects', 'xlsx')
     df.to_excel(file, index=False, sheet_name='Member Prospects')
-    print("Excel file created.")
+    print("Excel file created.\n")
 
 
 if __name__ == "__main__":
-    exclusion_club = "team-scotland" 
-    clubs = os.getenv("LIST_OF_CLUBS").split(",") 
+    exclusion_club = 'team-scotland' 
+    clubs = os.getenv('LIST_OF_CLUBS').split(',') 
 
     try:
         main(clubs, exclusion_club)
