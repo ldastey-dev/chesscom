@@ -1,7 +1,6 @@
 import os
 import time 
 import utils
-import requests
 import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
@@ -20,134 +19,113 @@ DATA_ANALYSIS_YEAR = os.getenv('DATA_ANALYSIS_YEAR')
 def get_all_club_members():
     url = f'https://api.chess.com/pub/club/{CLUB_REF}/members'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
 
-    if response.status_code == 200:
-        members = response.json().get('weekly', []) + response.json().get('monthly', []) + response.json().get('all_time', [])
-        return members
-    else:
-        print(f'Failed to fetch members: {response.status_code}\n')
-        return []
+    members = response.json().get('weekly', []) + response.json().get('monthly', []) + response.json().get('all_time', [])
+    
+    return members
 
 
 # Returns the daily rating for a member
 def get_member_daily_rating(username):
     url = f'https://api.chess.com/pub/player/{username}/stats'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        stats = response.json()
-        return stats.get('chess_daily', {}).get('last', {}).get('rating', 'N/A')
-    else:
-        print(f'Failed to fetch rating for {username}: {response.status_code}\n')
-        return 'N/A'
+    stats = response.json()
+    
+    return stats.get('chess_daily', {}).get('last', {}).get('rating', 'N/A')
 
 
 # Returns the last online date for a member
 def get_member_last_online(username):
     url = f'https://api.chess.com/pub/player/{username}'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        profile = response.json()
-        last_online = profile.get('last_online', 0)
-        return datetime.fromtimestamp(last_online).strftime('%d/%m/%Y')
-    else:
-        print(f'Failed to fetch last online for {username}: {response.status_code}\n')
-        return 'N/A'
+    profile = response.json()
+    last_online = profile.get('last_online', 0)
+    
+    return datetime.fromtimestamp(last_online).strftime('%d/%m/%Y')
 
 
 def get_timeout_percentage(username):
     url = f'https://api.chess.com/pub/player/{username}/stats'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        stats = response.json().get('chess_daily', {})
-        timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
-        return timeout_percent
-    else:
-        print(f'Failed to fetch stats for {username}: {response.status_code}\n')
-        return None
+    stats = response.json().get('chess_daily', {})
+    timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
+    
+    return timeout_percent
 
 
 # Returns the date a member joined the club
 def get_chesscom_joined_date(username):
     url = f'https://api.chess.com/pub/player/{username}'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        profile = response.json()
-        joined_date = profile.get('joined', 0)
-        return datetime.fromtimestamp(joined_date).strftime('%d/%m/%Y')
-    else:
-        print(f'Failed to fetch joined date for {username}: {response.status_code}\n')
-        return 'N/A'
+    profile = response.json()
+    joined_date = profile.get('joined', 0)
+    
+    return datetime.fromtimestamp(joined_date).strftime('%d/%m/%Y')
 
 
 def get_member_joined_club(club, username):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        data = response.json()
-        all_members = data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
-        
-        for member in all_members:
-            if member.get('username') == username:
-                joined_timestamp = member.get('joined', 0)
-                return datetime.fromtimestamp(joined_timestamp).strftime('%d/%m/%Y')
+    data = response.json()
+    all_members = data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
     
-    return None
+    for member in all_members:
+        if member.get('username') == username:
+            joined_timestamp = member.get('joined', 0)
+            
+            return datetime.fromtimestamp(joined_timestamp).strftime('%d/%m/%Y')
 
 
 # Returns all matches for the club in a given year
 def get_all_club_matches_in_year(year):
     url = f'https://api.chess.com/pub/club/{CLUB_REF}/matches'
 
-    response = requests.get(url, headers=utils.headers)
+    response = utils.request_handler(url, headers=utils.headers)
     
-    if response.status_code == 200:
-        all_matches = response.json().get('finished', [])
-        matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == year]
-        return matches_in_year
-    else:
-        print(f'Failed to fetch matches: {response.status_code}\n')
-        return []
+    all_matches = response.json().get('finished', [])
+    matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == year]
+    
+    return matches_in_year
 
 
 # Returns match data listing participants and results 
-def get_match_data(match_url):
-    response = requests.get(match_url, headers=utils.headers)
-
-    if response.status_code == 200:
-        match_data = response.json()
-        participants = {}
-        teams = match_data.get('teams', {})
-        team_scotland = None
-
-        if teams.get('team1', {}).get('name') == CLUB_NAME:
-            team_scotland = teams.get('team1', {})
-        elif teams.get('team2', {}).get('name') == CLUB_NAME:
-            team_scotland = teams.get('team2', {})
-
-        if team_scotland:
-            for player in team_scotland.get('players', []):
-                username = player['username']
-                result_white = player.get('played_as_white', 'in progress')
-                result_black = player.get('played_as_black', 'in progress')
-                
-                participants[username] = {
-                    'result_white': result_white, 'result_black': result_black
-                }
+def get_match_data(url):
+    response = utils.request_handler(url, headers=utils.headers)
 
 
-        return participants
-    return set()
+    match_data = response.json()
+    participants = {}
+    teams = match_data.get('teams', {})
+    team_scotland = None
+
+    if teams.get('team1', {}).get('name') == CLUB_NAME:
+        team_scotland = teams.get('team1', {})
+    elif teams.get('team2', {}).get('name') == CLUB_NAME:
+        team_scotland = teams.get('team2', {})
+
+    if team_scotland:
+        for player in team_scotland.get('players', []):
+            username = player['username']
+            result_white = player.get('played_as_white', 'in progress')
+            result_black = player.get('played_as_black', 'in progress')
+            
+            participants[username] = {
+                'result_white': result_white, 'result_black': result_black
+            }
+
+
+    return participants
 
 
 # Calculate the participation percentage for a member against club matches
