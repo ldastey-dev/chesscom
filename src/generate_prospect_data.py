@@ -92,7 +92,7 @@ def main(clubs, exclusion_club):
 
     file = utils.get_unique_filename('output', 'Member Prospects', 'xlsx')
     df.to_excel(file, index=False, sheet_name='Member Prospects')
-    print("Excel file created.\n")
+    print("Excel file created.\n\r")
 
 
 if __name__ == "__main__":
@@ -102,4 +102,4 @@ if __name__ == "__main__":
     try:
         main(clubs, exclusion_club)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}\n\r")

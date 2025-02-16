@@ -18,8 +18,8 @@ def get_stats(username):
     try:
         response = utils.request_handler(url, utils.headers)
     except requests.HTTPError as e:
-        print(f'Unable to retrieve stats for user: {username}\n')
-        print(f'Stack Trace: {e}\n')
+        print(f'Unable to retrieve stats for user: {username}\n\r')
+        print(f'Stack Trace: {e}\n\r')
         return {}
 
     return response.json().get('chess_daily', {})

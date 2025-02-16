@@ -124,7 +124,6 @@ def get_match_data(url):
                 'result_white': result_white, 'result_black': result_black
             }
 
-
     return participants
 
 
@@ -205,7 +204,7 @@ def main():
 
     file = utils.get_unique_filename('output', f'{CLUB_NAME} Data Extract {DATA_ANALYSIS_YEAR}', 'xlsx')
     export_to_excel(members_data, matches_data, file)
-    print(f'Data exported to {file} ... program executed successfully\r')
+    print(f'Data exported to {file} ... program executed successfully\n\r')
 
 
 if __name__ == "__main__":

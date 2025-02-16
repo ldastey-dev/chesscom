@@ -75,11 +75,11 @@ def main(club):
 
     file = utils.get_unique_filename('output', 'Club Member Report', 'xlsx')
     df.to_excel(file, index=False, sheet_name='Club Member Report')
-    print('Excel file created.\n')
+    print(f'Excel file created: {file}\n\r')
 
 
 if __name__ == "__main__":
     try:
         main(os.getenv('CLUB_REF'))
     except Exception as e:
-        print(f'Error: {e}\n')
+        print(f'Error: {e}\n\r')
