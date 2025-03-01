@@ -94,7 +94,7 @@ def get_all_club_matches_in_year(year):
     response = utils.request_handler(url, headers=utils.headers)
     
     all_matches = response.json().get('finished', [])
-    matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year == year]
+    matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year >= int(year)]
     
     return matches_in_year
 

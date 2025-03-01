@@ -72,7 +72,7 @@ def calculate_execution_time(func):
             end_time = time.time()
             execution_time = end_time - start_time
             
-            print(f"Execution time: {execution_time:.2f} seconds")
+            print(f"Execution time: {execution_time:.2f} seconds\r")
             print(f"Execution time: {(execution_time/60):.2f} minutes\n\r")
             
             enable_system_sleep()
