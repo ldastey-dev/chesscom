@@ -150,57 +150,67 @@ def main():
     #     {'username': 'jules64'}, {'username': 'supermashedpotato'}]  # Test users  
     members = get_all_club_members()
 
-    total_matches = 0
-    members_participation = {member['username']: 0 for member in members}
-    members_timeouts = {member['username']: 0 for member in members}
-
+    # Fetch all matches first
     matches = get_all_club_matches_in_year(DATA_ANALYSIS_YEAR)
     total_matches = len(matches)
-
-    # TODO: try to optimise this to be less than O(n^2)
+    
+    # Pre-process all match data in one go
+    all_match_data = {}
     matches_data = []
     for match in matches:
         match_name = match['name']
         match_url = match['@id']
         match_info = {'Match Name': match_name, 'Match URL': match_url}
-
-        match_data = get_match_data(match_url)
         
-        for member in members:
-            if member['username'] in match_data:
-                members_participation[member['username']] += 1
+        # Get match data once per match
+        match_data = get_match_data(match_url)
+        all_match_data[match_url] = match_data
+        matches_data.append(match_info)
+    
+    # Process member data separately from match iteration
+    members_data = []
+    for member in members:
+        username = member['username']
+        matches_participated = 0
+        timeouts = 0
+        
+        # Fill in match data for this member
+        for i, match in enumerate(matches):
+            match_url = match['@id']
+            match_data = all_match_data[match_url]
+            
+            if username in match_data:
+                matches_participated += 1
+                result_white = match_data[username]['result_white']
+                result_black = match_data[username]['result_black']
                 
-                result_white = match_data[member['username']]['result_white']
-                result_black = match_data[member['username']]['result_black']
-
-                match_info[f"{member['username']}_white"] = result_white
-                match_info[f"{member['username']}_black"] = result_black
-
+                # Add results to match_info
+                matches_data[i][f"{username}_white"] = result_white
+                matches_data[i][f"{username}_black"] = result_black
+                
                 # Check for timeouts
                 if result_white == 'timeout':
-                    members_timeouts[member['username']] += 1
-                
+                    timeouts += 1
                 if result_black == 'timeout':
-                    members_timeouts[member['username']] += 1
+                    timeouts += 1
             else:
-                match_info[f"{member['username']}_white"] = 'not played'
-                match_info[f"{member['username']}_black"] = 'not played'
+                matches_data[i][f"{username}_white"] = 'not played'
+                matches_data[i][f"{username}_black"] = 'not played'
         
-        matches_data.append(match_info)
-
-    members_data = [{
-        'Username': member['username'], 
-        'Daily Rating': get_member_daily_rating(member['username']),
-        'Joined Chess.com': get_chesscom_joined_date(member['username']), 
-        'Joined Club': get_member_joined_club(CLUB_REF, member['username']),
-        'Last Online': get_member_last_online(member['username']),
-        'Timeout Percentage': get_timeout_percentage(member['username']),
-        'Club Timeouts': members_timeouts.get(member['username'], 0),
-        'Total Matches': total_matches, 
-        'Participation %': calculate_participation_percentage(
-            total_matches, 
-            members_participation[member['username']])
-    } for member in members]
+        # Collate member data for export
+        member_data = {
+            'Username': username,
+            'Daily Rating': get_member_daily_rating(username),
+            'Joined Chess.com': get_chesscom_joined_date(username),
+            'Joined Club': get_member_joined_club(CLUB_REF, username),
+            'Last Online': get_member_last_online(username),
+            'Timeout Percentage': get_timeout_percentage(username),
+            'Club Timeouts': timeouts,
+            'Total Matches': total_matches,
+            'Participation %': calculate_participation_percentage(
+                total_matches, matches_participated)
+        }
+        members_data.append(member_data)
 
     file = utils.get_unique_filename('output', f'{CLUB_NAME} Club Contribution Report {DATA_ANALYSIS_YEAR}', 'xlsx')
     export_to_excel(members_data, matches_data, file)

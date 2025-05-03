@@ -87,8 +87,6 @@ def get_unique_filename(folder, fname, extension):
     counter = 1
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Construct the path  relative to the base directory
     path = f'{os.path.join(base_dir, '..', '..')}/{folder}'
     
     file = f"{path}/{fname}.{extension}"
