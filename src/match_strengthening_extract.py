@@ -3,6 +3,7 @@ import utils
 import requests
 import pandas as pd
 from datetime import datetime, timezone
+from openpyxl.styles import Font
 
 
 # Environment variables
@@ -101,7 +102,7 @@ def main(club, match_id):
         signed_up = 'Yes' if username.lower() in match_participants else 'No'
 
         results.append({
-            'Username': username,
+            'Username': username, 
             'Daily Rating': member.get('daily_rating'),
             'Last Online': member.get('last_online'),
             'Timeout Percentage': member.get('timeout_percent'),
@@ -111,12 +112,26 @@ def main(club, match_id):
     df = pd.DataFrame(results)
 
     file = utils.get_unique_filename('output', 'Match Eligibility', 'xlsx')
-    df.to_excel(file, index=False)
+    
+    # Create Excel file with pandas
+    with pd.ExcelWriter(file, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Match Eligibility Data')
+        
+        # Access the workbook and worksheet
+        workbook = writer.book
+        worksheet = writer.sheets['Match Eligibility Data']
+        
+        # Add hyperlinks to the Username column
+        for row_num, username in enumerate(df['Username'], start=2):  # Start at row 2 (skip header)
+            cell = worksheet.cell(row=row_num, column=1)  # Username is in column 1
+            cell.value = username
+            cell.hyperlink = f'https://www.chess.com/member/{username}'
+            cell.font = Font(color="0000FF", underline="single")  # Blue, underlined text
+
+    print(f"Excel file created: {file}")
 
 
 if __name__ == "__main__":
-    utils.install_requirements()
-
     match_id = MATCH_ID
 
     if match_id is None:
