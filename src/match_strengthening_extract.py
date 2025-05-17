@@ -128,7 +128,7 @@ def main(club, match_id):
             cell.hyperlink = f'https://www.chess.com/member/{username}'
             cell.font = Font(color="0000FF", underline="single")  # Blue, underlined text
 
-    print(f"Excel file created: {file}")
+    print(f"Excel file created: {file}\n\r")
 
 
 if __name__ == "__main__":
