@@ -10,13 +10,29 @@ from dotenv import load_dotenv
 
 # Setup environment variables
 load_dotenv()
- 
+
 
 # Authentication headers
 # Using Chrome user agent to fly low and avoid the radar :)
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
 }
+
+
+# Wrapper for print statements to ensure consistent newlines and carriage returns
+def print_line(message):
+    """
+    Function to print statements ensuring consistent newlines and carriage returns.
+    Uses the built-in print function but adds \n\r at the end by default.
+    
+    Args:
+        message (str): The message to print.
+        
+    Returns:
+        None
+    """
+    print(message, end='\n\r')
+ 
 
 # Make sure we have all the dependencies installed
 # Avoids having to manually remember to run this command
@@ -27,7 +43,7 @@ def install_requirements():
     if os.path.exists(requirements_path):
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', '-r', requirements_path])
     else:
-        print("requirements.txt not found\n\r")
+        print_line("requirements.txt not found")
 
 
 # Prevent the system from sleeping
@@ -42,7 +58,7 @@ def disable_system_sleep():
                 '--why="Running Python program"', 'sleep', 'infinity'
             ])
         except Exception as e:
-            print(f"Failed to inhibit sleep: {e}\n\r")
+            print_line(f"Failed to inhibit sleep: {e}")
 
 
 # Allow the system to sleep
@@ -54,7 +70,7 @@ def enable_system_sleep():
         try:
             subprocess.Popen(['sudo', 'pkill', '-f', 'systemd-inhibit'])
         except Exception as e:
-            print(f"Failed to allow sleep: {e}\n\r")
+            print_line(f"Failed to allow sleep: {e}")
 
 
 # Decoration wrapper to calculate total execution time
@@ -66,14 +82,14 @@ def calculate_execution_time(func):
             disable_system_sleep()
             result = func(*args, **kwargs)
         except Exception as e:
-            print(f"Error: {e}\n\r")
+            print_line(f"Error: {e}")
             result = None
         finally:
             end_time = time.time()
             execution_time = end_time - start_time
             
-            print(f"Execution time: {execution_time:.2f} seconds\r")
-            print(f"Execution time: {(execution_time/60):.2f} minutes\n\r")
+            print_line(f"Execution time: {execution_time:.2f} seconds")
+            print_line(f"Execution time: {(execution_time/60):.2f} minutes")
             
             enable_system_sleep()
         
@@ -112,5 +128,5 @@ def request_handler(url, headers=None, retries=3, backoff_factor=0.3):
                 sleep_time = backoff_factor * (2 ** attempt)
                 time.sleep(sleep_time)
             else:
-                print(f'Failed to fetch data from {url}\n\r')
+                print_line(f'Failed to fetch data from {url}')
                 raise e

@@ -1,7 +1,7 @@
 import os
 import utils
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def get_club_members(club):
@@ -25,7 +25,7 @@ def get_member_joined_club(club, username):
     for member in all_members:
         if member.get('username') == username:
             joined_timestamp = member.get('joined', 0)
-            return datetime.fromtimestamp(joined_timestamp).strftime('%d/%m/%Y')
+            return datetime.fromtimestamp(joined_timestamp, tz=timezone.utc).strftime('%d/%m/%Y')
 
     return []
 
@@ -47,8 +47,8 @@ def get_member_info(username, club):
 
     name = profile.get('name', '')
     title = profile.get('title', '')
-    last_online = datetime.fromtimestamp(profile.get('last_online', 0)).strftime('%d/%m/%Y')
-    joined = datetime.fromtimestamp(profile.get('joined', 0)).strftime('%d/%m/%Y')
+    last_online = datetime.fromtimestamp(profile.get('last_online', 0), tz=timezone.utc).strftime('%d/%m/%Y')
+    joined = datetime.fromtimestamp(profile.get('joined', 0), tz=timezone.utc).strftime('%d/%m/%Y')
 
     return {
         'FIDE Title': title,
@@ -73,13 +73,13 @@ def main(club):
 
     df = pd.DataFrame(results)
 
-    file = utils.get_unique_filename('output', 'Club Member Report', 'xlsx')
-    df.to_excel(file, index=False, sheet_name='Club Member Report')
-    print(f'Excel file created: {file}\n\r')
+    file = utils.get_unique_filename('output', 'Club Member Summary Report', 'xlsx')
+    df.to_excel(file, index=False, sheet_name='Club Member Summary Report')
+    utils.print_line(f'Excel file created: {file}')
 
 
 if __name__ == "__main__":
     try:
         main(os.getenv('CLUB_REF'))
     except Exception as e:
-        print(f'Error: {e}\n\r')
+        utils.print_line(f'Error: {e}')

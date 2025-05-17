@@ -2,7 +2,7 @@ import os
 import time 
 import utils
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 
@@ -46,7 +46,7 @@ def get_member_last_online(username):
     profile = response.json()
     last_online = profile.get('last_online', 0)
     
-    return datetime.fromtimestamp(last_online).strftime('%d/%m/%Y')
+    return datetime.fromtimestamp(last_online, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
 def get_timeout_percentage(username):
@@ -69,7 +69,7 @@ def get_chesscom_joined_date(username):
     profile = response.json()
     joined_date = profile.get('joined', 0)
     
-    return datetime.fromtimestamp(joined_date).strftime('%d/%m/%Y')
+    return datetime.fromtimestamp(joined_date, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
 def get_member_joined_club(club, username):
@@ -84,7 +84,7 @@ def get_member_joined_club(club, username):
         if member.get('username') == username:
             joined_timestamp = member.get('joined', 0)
             
-            return datetime.fromtimestamp(joined_timestamp).strftime('%d/%m/%Y')
+            return datetime.fromtimestamp(joined_timestamp, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
 # Returns all matches for the club in a given year
@@ -146,9 +146,10 @@ def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
 
 @utils.calculate_execution_time
 def main():
-    # members = [{'username': 'leighdastey'}, {'username': 'andrewmoulden'}, 
-    #     {'username': 'jules64'}, {'username': 'supermashedpotato'}]  # Test users  
-    members = get_all_club_members()
+    members = [{'username': 'leighdastey'}, 
+               {'username': 'andrewmoulden'}, 
+               {'username': 'jules64'}]  # Test users  
+    # members = get_all_club_members()
 
     # Fetch all matches first
     matches = get_all_club_matches_in_year(DATA_ANALYSIS_YEAR)
@@ -214,7 +215,7 @@ def main():
 
     file = utils.get_unique_filename('output', f'{CLUB_NAME} Club Contribution Report {DATA_ANALYSIS_YEAR}', 'xlsx')
     export_to_excel(members_data, matches_data, file)
-    print(f'Data exported to {file} ... program executed successfully\n\r')
+    utils.print_line(f'Data exported to {file} ... program executed successfully')
 
 
 if __name__ == "__main__":

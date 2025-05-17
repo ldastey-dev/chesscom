@@ -2,16 +2,13 @@ import os
 import utils
 import requests
 import pandas as pd
-from datetime import datetime
-
-
-headers = utils.headers
+from datetime import datetime, timezone
 
 
 def fetch_club_members(club):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=utils.headers)
     
     if response.status_code == 200:
         data = response.json()
@@ -22,7 +19,7 @@ def fetch_club_members(club):
 def fetch_member_info(username, club):
     url = f'https://api.chess.com/pub/player/{username}/stats'
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=utils.headers)
 
     if response.status_code == 200:
         stats = response.json().get('chess_daily', {})
@@ -34,15 +31,15 @@ def fetch_member_info(username, club):
 
     url = f'https://api.chess.com/pub/player/{username}'
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=utils.headers)
 
     if response.status_code == 200:
         profile = response.json()
 
         name = profile.get('name', '')
         title = profile.get('title', '')
-        last_online = datetime.utcfromtimestamp(profile.get('last_online', 0)).strftime('%d/%m/%Y')
-        joined = datetime.utcfromtimestamp(profile.get('joined', 0)).strftime('%d/%m/%Y')
+        last_online = datetime.fromtimestamp(profile.get('last_online', 0), tz=timezone.utc).strftime('%d/%m/%Y')
+        joined = datetime.fromtimestamp(profile.get('joined', 0), tz=timezone.utc).strftime('%d/%m/%Y')
     else:
         name = ''
         title = ''
@@ -92,7 +89,7 @@ def main(clubs, exclusion_club):
 
     file = utils.get_unique_filename('output', 'Member Prospects', 'xlsx')
     df.to_excel(file, index=False, sheet_name='Member Prospects')
-    print("Excel file created.\n\r")
+    utils.print_line(f'Excel file created: {file}')
 
 
 if __name__ == "__main__":
@@ -102,4 +99,4 @@ if __name__ == "__main__":
     try:
         main(clubs, exclusion_club)
     except Exception as e:
-        print(f"Error: {e}\n\r")
+        utils.print_line(f"Error: {e}")
