@@ -3,5 +3,4 @@ output
 **/.venv
 **/.qodo
 **/*.xls*
-**/.vscode
 **/__pycache__
