@@ -62,6 +62,7 @@ def get_last_online(username):
     """
     response_data = call_chess_api(f'player/{username}')
     last_online = response_data.get('last_online', 0)
+    
     return datetime.fromtimestamp(last_online, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
@@ -102,12 +103,11 @@ def get_eligible_members(club, max_rating):
 
         stats = get_stats(username)
         rating = stats.get('last', {}).get('rating', 0)
-        timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
 
         if rating <= max_rating:
             member['daily_rating'] = rating
             member['last_online'] = get_last_online(username)
-            member['timeout_percent'] = timeout_percent
+            member['timeout_percent'] = stats.get('record', {}).get('timeout_percent', 0)
 
             eligible_members.append(member)
 
@@ -127,12 +127,15 @@ def get_match_participants(match_id):
     """
     match_data = call_chess_api(f'match/{match_id}')
     
-    all_participants = []
-    
-    for _, team_data in match_data.get('teams', {}).items():
-        if team_data.get('name', '').lower() == CLUB_NAME.lower():
-            for player in team_data.get('players', []):
-                all_participants.append(player.get('username', '').lower())
+    # Optimized to use list comprehension - O(n) where n is total player count
+    # Find our club's team and extract all player usernames at once
+    club_name_lower = CLUB_NAME.lower()
+    all_participants = [
+        player.get('username', '').lower()
+        for _, team_data in match_data.get('teams', {}).items()
+        if team_data.get('name', '').lower() == club_name_lower
+        for player in team_data.get('players', [])
+    ]
 
     return all_participants
 
