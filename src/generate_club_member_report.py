@@ -35,9 +35,16 @@ def get_member_info(username, club):
 
     response = utils.request_handler(url, headers=utils.headers)
 
-    stats = response.json().get('chess_daily', {})
-    rating = stats.get('last', {}).get('rating', 0)
-    timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
+    stats_data = response.json()
+    
+    # Get standard chess daily stats
+    chess_stats = stats_data.get('chess_daily', {})
+    chess_rating = chess_stats.get('last', {}).get('rating', 0)
+    timeout_percent = chess_stats.get('record', {}).get('timeout_percent', 0)
+    
+    # Get Chess960 daily stats
+    chess960_stats = stats_data.get('chess960_daily', {})
+    chess960_rating = chess960_stats.get('last', {}).get('rating', 'Unrated') if chess960_stats else 'Unrated'
 
     url = f'https://api.chess.com/pub/player/{username}'
 
@@ -57,7 +64,8 @@ def get_member_info(username, club):
         'Joined Chess.com': joined,
         'Joined Club': get_member_joined_club(club, username),
         'Last Online': last_online,
-        'Daily Rating': rating,
+        'Daily Rating': chess_rating,
+        'Chess960 Rating': chess960_rating,
         'Timeout Percentage': timeout_percent
     }
 

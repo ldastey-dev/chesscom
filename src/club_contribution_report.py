@@ -146,10 +146,10 @@ def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
 
 @utils.calculate_execution_time
 def main():
-    members = [{'username': 'leighdastey'}, 
-               {'username': 'andrewmoulden'}, 
-               {'username': 'jules64'}]  # Test users  
-    # members = get_all_club_members()
+    # members = [{'username': 'leighdastey'}, 
+    #            {'username': 'andrewmoulden'}, 
+    #            {'username': 'jules64'}]  # Test users  
+    members = get_all_club_members()
 
     # Fetch all matches first
     matches = get_all_club_matches_in_year(DATA_ANALYSIS_YEAR)
