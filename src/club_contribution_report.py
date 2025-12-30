@@ -134,14 +134,31 @@ def calculate_participation_percentage(matches_played, matches_participated):
     return round((matches_participated / matches_played) * 100, 2)
 
 
+# Calculate the win rate percentage for a member based on completed games
+def calculate_win_rate(wins, losses, draws):
+    total_games = wins + losses + draws
+    if total_games == 0:
+        return 0
+    return round((wins / total_games) * 100, 2)
+
+
 # Export the data to an Excel file
 def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
     df_members = pd.DataFrame(members_data)
     df_matches = pd.DataFrame(matches_data)
     
-    with pd.ExcelWriter(filename) as writer:
+    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
         df_members.to_excel(writer, sheet_name='Member Metrics', index=False)
         df_matches.to_excel(writer, sheet_name='Match Data', index=False)
+        
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets['Member Metrics']
+        
+        # Add hyperlinks to usernames
+        for row_num, username in enumerate(df_members['Username'], start=1):
+            profile_url = f'https://www.chess.com/member/{username}'
+            worksheet.write_url(row_num, 0, profile_url, string=username)
 
 
 @utils.calculate_execution_time
@@ -174,6 +191,9 @@ def main():
         username = member['username']
         matches_participated = 0
         timeouts = 0
+        wins = 0
+        losses = 0
+        draws = 0
         
         # Fill in match data for this member
         for i, match in enumerate(matches):
@@ -189,11 +209,17 @@ def main():
                 matches_data[i][f"{username}_white"] = result_white
                 matches_data[i][f"{username}_black"] = result_black
                 
-                # Check for timeouts
-                if result_white == 'timeout':
-                    timeouts += 1
-                if result_black == 'timeout':
-                    timeouts += 1
+                # Count results for win rate calculation (only completed games)
+                for result in [result_white, result_black]:
+                    if result == 'win':
+                        wins += 1
+                    elif result == 'timeout':
+                        timeouts += 1
+                        losses += 1  # Count timeouts as losses
+                    elif result == 'checkmated' or result == 'resigned':
+                        losses += 1
+                    elif result == 'agreed' or result == 'repetition' or result == 'stalemate' or result == 'insufficient':
+                        draws += 1
             else:
                 matches_data[i][f"{username}_white"] = 'not played'
                 matches_data[i][f"{username}_black"] = 'not played'
@@ -209,7 +235,8 @@ def main():
             'Club Timeouts': timeouts,
             'Total Matches': total_matches,
             'Participation %': calculate_participation_percentage(
-                total_matches, matches_participated)
+                total_matches, matches_participated),
+            'Win Rate %': calculate_win_rate(wins, losses, draws)
         }
         members_data.append(member_data)
 
