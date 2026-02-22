@@ -1,15 +1,17 @@
 import os
-import utils
-import requests
-import pandas as pd
 from datetime import datetime, timezone
+
+import pandas as pd
+import requests
+
+import utils
 
 
 def fetch_club_members(club):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
     response = requests.get(url, headers=utils.headers)
-    
+
     if response.status_code == 200:
         data = response.json()
         return data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
@@ -93,8 +95,8 @@ def main(clubs, exclusion_club):
 
 
 if __name__ == "__main__":
-    exclusion_club = 'team-scotland' 
-    clubs = os.getenv('LIST_OF_CLUBS').split(',') 
+    exclusion_club = 'team-scotland'
+    clubs = os.getenv('LIST_OF_CLUBS').split(',')
 
     try:
         main(clubs, exclusion_club)
