@@ -5,3 +5,5 @@ output
 **/*.xls*
 **/__pycache__
 *.egg-info/
+.coverage
+coverage.xml

@@ -1,16 +1,18 @@
 import os
-import utils
-import pandas as pd
 from datetime import datetime, timezone
+
+import pandas as pd
+
+import utils
 
 
 def get_club_members(club):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     data = response.json()
-    
+
     return data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
 
 
@@ -18,10 +20,10 @@ def get_member_joined_club(club, username):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     data = response.json()
     all_members = data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
-    
+
     for member in all_members:
         if member.get('username') == username:
             joined_timestamp = member.get('joined', 0)
@@ -36,12 +38,12 @@ def get_member_info(username, club):
     response = utils.request_handler(url, headers=utils.headers)
 
     stats_data = response.json()
-    
+
     # Get standard chess daily stats
     chess_stats = stats_data.get('chess_daily', {})
     chess_rating = chess_stats.get('last', {}).get('rating', 0)
     timeout_percent = chess_stats.get('record', {}).get('timeout_percent', 0)
-    
+
     # Get Chess960 daily stats
     chess960_stats = stats_data.get('chess960_daily', {})
     chess960_rating = chess960_stats.get('last', {}).get('rating', 'Unrated') if chess960_stats else 'Unrated'

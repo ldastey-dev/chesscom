@@ -1,9 +1,0 @@
-  - name: AI Reviewer
-  # You may pin to the exact commit or the version.
-  # uses: JensAstrup/ai-reviewer@e18234f8549f31e98059ac32850ad6a59878a0b8
-  uses: JensAstrup/ai-reviewer@v1.0.2
-  with:
-    # API key for OpenAI
-    OPENAI_API_KEY: {{ secrets.OPENAI_API_TOKEN }}
-    # Token for GitHub
-    GITHUB_TOKEN: {{ secrets.GITHUB_TOKEN }}

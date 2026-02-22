@@ -1,10 +1,11 @@
 import os
-import time 
-import utils
-import pandas as pd
+import time
 from datetime import datetime, timezone
+
+import pandas as pd
 from dotenv import load_dotenv
 
+import utils
 
 load_dotenv()
 
@@ -15,14 +16,14 @@ CLUB_NAME = os.getenv('CLUB_NAME')
 DATA_ANALYSIS_YEAR = os.getenv('DATA_ANALYSIS_YEAR')
 
 
-# Returns a list of all club members 
+# Returns a list of all club members
 def get_all_club_members():
     url = f'https://api.chess.com/pub/club/{CLUB_REF}/members'
 
     response = utils.request_handler(url, headers=utils.headers)
 
     members = response.json().get('weekly', []) + response.json().get('monthly', []) + response.json().get('all_time', [])
-    
+
     return members
 
 
@@ -31,9 +32,9 @@ def get_member_daily_rating(username):
     url = f'https://api.chess.com/pub/player/{username}/stats'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     stats = response.json()
-    
+
     return stats.get('chess_daily', {}).get('last', {}).get('rating', 'N/A')
 
 
@@ -42,10 +43,10 @@ def get_member_last_online(username):
     url = f'https://api.chess.com/pub/player/{username}'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     profile = response.json()
     last_online = profile.get('last_online', 0)
-    
+
     return datetime.fromtimestamp(last_online, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
@@ -53,10 +54,10 @@ def get_timeout_percentage(username):
     url = f'https://api.chess.com/pub/player/{username}/stats'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     stats = response.json().get('chess_daily', {})
     timeout_percent = stats.get('record', {}).get('timeout_percent', 0)
-    
+
     return timeout_percent
 
 
@@ -65,10 +66,10 @@ def get_chesscom_joined_date(username):
     url = f'https://api.chess.com/pub/player/{username}'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     profile = response.json()
     joined_date = profile.get('joined', 0)
-    
+
     return datetime.fromtimestamp(joined_date, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
@@ -76,14 +77,14 @@ def get_member_joined_club(club, username):
     url = f'https://api.chess.com/pub/club/{club}/members'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     data = response.json()
     all_members = data.get('weekly', []) + data.get('monthly', []) + data.get('all_time', [])
-    
+
     for member in all_members:
         if member.get('username') == username:
             joined_timestamp = member.get('joined', 0)
-            
+
             return datetime.fromtimestamp(joined_timestamp, tz=timezone.utc).strftime('%d/%m/%Y')
 
 
@@ -92,14 +93,14 @@ def get_all_club_matches_in_year(year):
     url = f'https://api.chess.com/pub/club/{CLUB_REF}/matches'
 
     response = utils.request_handler(url, headers=utils.headers)
-    
+
     all_matches = response.json().get('finished', [])
     matches_in_year = [match for match in all_matches if time.gmtime(match['start_time']).tm_year >= int(year)]
-    
+
     return matches_in_year
 
 
-# Returns match data listing participants and results 
+# Returns match data listing participants and results
 def get_match_data(url):
     response = utils.request_handler(url, headers=utils.headers)
 
@@ -119,7 +120,7 @@ def get_match_data(url):
             username = player['username']
             result_white = player.get('played_as_white', 'in progress')
             result_black = player.get('played_as_black', 'in progress')
-            
+
             participants[username] = {
                 'result_white': result_white, 'result_black': result_black
             }
@@ -146,15 +147,13 @@ def calculate_win_rate(wins, losses, draws):
 def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
     df_members = pd.DataFrame(members_data)
     df_matches = pd.DataFrame(matches_data)
-    
+
     with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
         df_members.to_excel(writer, sheet_name='Member Metrics', index=False)
         df_matches.to_excel(writer, sheet_name='Match Data', index=False)
-        
-        # Get the xlsxwriter workbook and worksheet objects
-        workbook = writer.book
+
         worksheet = writer.sheets['Member Metrics']
-        
+
         # Add hyperlinks to usernames
         for row_num, username in enumerate(df_members['Username'], start=1):
             profile_url = f'https://www.chess.com/member/{username}'
@@ -163,15 +162,15 @@ def export_to_excel(members_data, matches_data, filename='output/default.xlsx'):
 
 @utils.calculate_execution_time
 def main():
-    # members = [{'username': 'leighdastey'}, 
-    #            {'username': 'andrewmoulden'}, 
-    #            {'username': 'jules64'}]  # Test users  
+    # members = [{'username': 'leighdastey'},
+    #            {'username': 'andrewmoulden'},
+    #            {'username': 'jules64'}]  # Test users
     members = get_all_club_members()
 
     # Fetch all matches first
     matches = get_all_club_matches_in_year(DATA_ANALYSIS_YEAR)
     total_matches = len(matches)
-    
+
     # Pre-process all match data in one go
     all_match_data = {}
     matches_data = []
@@ -179,12 +178,12 @@ def main():
         match_name = match['name']
         match_url = match['@id']
         match_info = {'Match Name': match_name, 'Match URL': match_url}
-        
+
         # Get match data once per match
         match_data = get_match_data(match_url)
         all_match_data[match_url] = match_data
         matches_data.append(match_info)
-    
+
     # Process member data separately from match iteration
     members_data = []
     for member in members:
@@ -194,21 +193,21 @@ def main():
         wins = 0
         losses = 0
         draws = 0
-        
+
         # Fill in match data for this member
         for i, match in enumerate(matches):
             match_url = match['@id']
             match_data = all_match_data[match_url]
-            
+
             if username in match_data:
                 matches_participated += 1
                 result_white = match_data[username]['result_white']
                 result_black = match_data[username]['result_black']
-                
+
                 # Add results to match_info
                 matches_data[i][f"{username}_white"] = result_white
                 matches_data[i][f"{username}_black"] = result_black
-                
+
                 # Count results for win rate calculation (only completed games)
                 for result in [result_white, result_black]:
                     if result == 'win':
@@ -223,7 +222,7 @@ def main():
             else:
                 matches_data[i][f"{username}_white"] = 'not played'
                 matches_data[i][f"{username}_black"] = 'not played'
-        
+
         # Collate member data for export
         member_data = {
             'Username': username,
