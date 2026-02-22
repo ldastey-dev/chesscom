@@ -8,7 +8,6 @@ dependencies = [
     "pandas~=2.3.3",
     "requests~=2.32.5",
     "openpyxl~=3.1.5",
-    "xlsxwriter~=3.2.9",
     "python-dotenv~=1.2.1",
 ]
 
@@ -19,6 +18,9 @@ dev = [
     "responses~=0.26.0",
     "ruff~=0.15.2",
 ]
+
+[project.scripts]
+chesscom = "chesscom.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
