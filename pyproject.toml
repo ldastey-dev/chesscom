@@ -2,7 +2,7 @@
 name = "chesscom"
 version = "0.1.0"
 description = "Python tools for managing a Chess.com club — member reports, match participation, prospect lists, and match eligibility."
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy~=2.4.0",
     "pandas~=2.3.3",
@@ -28,7 +28,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]

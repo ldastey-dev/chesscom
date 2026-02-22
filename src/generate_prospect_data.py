@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 import requests
@@ -40,8 +40,8 @@ def fetch_member_info(username, club):
 
         name = profile.get('name', '')
         title = profile.get('title', '')
-        last_online = datetime.fromtimestamp(profile.get('last_online', 0), tz=timezone.utc).strftime('%d/%m/%Y')
-        joined = datetime.fromtimestamp(profile.get('joined', 0), tz=timezone.utc).strftime('%d/%m/%Y')
+        last_online = datetime.fromtimestamp(profile.get('last_online', 0), tz=UTC).strftime('%d/%m/%Y')
+        joined = datetime.fromtimestamp(profile.get('joined', 0), tz=UTC).strftime('%d/%m/%Y')
     else:
         name = ''
         title = ''
