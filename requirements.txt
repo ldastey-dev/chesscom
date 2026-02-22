@@ -1,6 +1,0 @@
-numpy
-pandas
-requests
-openpyxl
-xlsxwriter
-python-dotenv

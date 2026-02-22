@@ -4,3 +4,4 @@ output
 **/.qodo
 **/*.xls*
 **/__pycache__
+*.egg-info/
