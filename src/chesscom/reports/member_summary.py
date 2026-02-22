@@ -53,12 +53,7 @@ class MemberSummaryReport(BaseReport):
     # ------------------------------------------------------------------
 
     def _all_members(self, club_ref: str) -> list[dict]:
-        data = self.client.get_club_members(club_ref)
-        return (
-            data.get("weekly", [])
-            + data.get("monthly", [])
-            + data.get("all_time", [])
-        )
+        return self.client.get_club_members(club_ref)
 
     @staticmethod
     def _to_row(m: Member) -> dict:
