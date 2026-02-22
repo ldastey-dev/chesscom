@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 import requests
@@ -90,7 +90,7 @@ def get_last_online(username):
     response_data = call_chess_api(f'player/{username}')
     last_online = response_data.get('last_online', 0)
 
-    return datetime.fromtimestamp(last_online, tz=timezone.utc).strftime('%d/%m/%Y')
+    return datetime.fromtimestamp(last_online, tz=UTC).strftime('%d/%m/%Y')
 
 
 # Returns the maximum rating allowed for a given match
@@ -378,6 +378,8 @@ def main(club, match_id):
 
 
 if __name__ == "__main__":
+    utils.init()
+
     match_id = MATCH_ID
 
     if match_id is None:

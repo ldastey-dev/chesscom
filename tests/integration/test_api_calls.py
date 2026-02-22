@@ -8,7 +8,6 @@ traffic is made during these tests.
 import os
 from unittest.mock import patch
 
-import pytest
 import responses as resp
 
 # ---------------------------------------------------------------------------

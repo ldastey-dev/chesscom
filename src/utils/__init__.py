@@ -1,15 +1,18 @@
-import ctypes
 import os
-import platform
-import subprocess
-import sys
 import time
 
 import requests
 from dotenv import load_dotenv
 
-# Setup environment variables
-load_dotenv()
+
+def init():
+    """
+    Initialise environment variables from a .env file.
+
+    Call this at the entry point of each script before accessing
+    environment variables.
+    """
+    load_dotenv()
 
 
 # Authentication headers
@@ -19,11 +22,9 @@ headers = {
 }
 
 
-# Wrapper for print statements to ensure consistent newlines and carriage returns
 def print_line(message):
     """
-    Function to print statements ensuring consistent newlines and carriage returns.
-    Uses the built-in print function but adds \n\r at the end by default.
+    Print a message to stdout.
 
     Args:
         message (str): The message to print.
@@ -31,46 +32,7 @@ def print_line(message):
     Returns:
         None
     """
-    print(message, end='\n\r')
-
-
-# Make sure we have all the dependencies installed
-# Avoids having to manually remember to run this command
-def install_requirements():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    requirements_path = os.path.join(base_dir, '..', '..', 'requirements.txt')
-
-    if os.path.exists(requirements_path):
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', '-r', requirements_path])
-    else:
-        print_line("requirements.txt not found")
-
-
-# Prevent the system from sleeping
-def disable_system_sleep():
-    if (platform.system() == "Windows" and
-        "microsoft" not in platform.uname().release.lower()):
-        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
-    elif platform.system() == "Linux":
-        try:
-            subprocess.Popen([
-                'sudo', 'systemd-inhibit', '--what=handle-lid-switch',
-                '--why="Running Python program"', 'sleep', 'infinity'
-            ])
-        except Exception as e:
-            print_line(f"Failed to inhibit sleep: {e}")
-
-
-# Allow the system to sleep
-def enable_system_sleep():
-    if (platform.system() == "Windows" and
-        "microsoft" not in platform.uname().release.lower()):
-        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
-    elif platform.system() == "Linux":
-        try:
-            subprocess.Popen(['sudo', 'pkill', '-f', 'systemd-inhibit'])
-        except Exception as e:
-            print_line(f"Failed to allow sleep: {e}")
+    print(message)
 
 
 # Decoration wrapper to calculate total execution time
@@ -79,19 +41,16 @@ def calculate_execution_time(func):
         start_time = time.time()
 
         try:
-            disable_system_sleep()
             result = func(*args, **kwargs)
         except Exception as e:
-            print_line(f"Error: {e}")
-            result = None
+            print_line(f"Error in {func.__name__}: {e}")
+            raise
         finally:
             end_time = time.time()
             execution_time = end_time - start_time
 
             print_line(f"Execution time: {execution_time:.2f} seconds")
             print_line(f"Execution time: {(execution_time/60):.2f} minutes")
-
-            enable_system_sleep()
 
         return result
 

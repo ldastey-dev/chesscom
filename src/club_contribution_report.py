@@ -1,14 +1,10 @@
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
-from dotenv import load_dotenv
 
 import utils
-
-load_dotenv()
-
 
 # Environment variables
 CLUB_REF = os.getenv('CLUB_REF')
@@ -47,7 +43,7 @@ def get_member_last_online(username):
     profile = response.json()
     last_online = profile.get('last_online', 0)
 
-    return datetime.fromtimestamp(last_online, tz=timezone.utc).strftime('%d/%m/%Y')
+    return datetime.fromtimestamp(last_online, tz=UTC).strftime('%d/%m/%Y')
 
 
 def get_timeout_percentage(username):
@@ -70,7 +66,7 @@ def get_chesscom_joined_date(username):
     profile = response.json()
     joined_date = profile.get('joined', 0)
 
-    return datetime.fromtimestamp(joined_date, tz=timezone.utc).strftime('%d/%m/%Y')
+    return datetime.fromtimestamp(joined_date, tz=UTC).strftime('%d/%m/%Y')
 
 
 def get_member_joined_club(club, username):
@@ -85,7 +81,7 @@ def get_member_joined_club(club, username):
         if member.get('username') == username:
             joined_timestamp = member.get('joined', 0)
 
-            return datetime.fromtimestamp(joined_timestamp, tz=timezone.utc).strftime('%d/%m/%Y')
+            return datetime.fromtimestamp(joined_timestamp, tz=UTC).strftime('%d/%m/%Y')
 
 
 # Returns all matches for the club in a given year
@@ -245,4 +241,5 @@ def main():
 
 
 if __name__ == "__main__":
+    utils.init()
     main()

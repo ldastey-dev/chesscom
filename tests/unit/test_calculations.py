@@ -4,7 +4,6 @@ Unit tests for pure calculation functions in club_contribution_report and utils.
 These tests have no I/O or HTTP dependencies — they test logic only.
 """
 
-import os
 from unittest.mock import patch
 
 import pytest
@@ -13,7 +12,6 @@ import responses as responses_lib
 
 import club_contribution_report as ccr
 import utils
-
 
 # ---------------------------------------------------------------------------
 # calculate_participation_percentage
