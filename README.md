@@ -47,7 +47,13 @@ source .venv/bin/activate
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
+```
+
+For development (includes `pytest`, `pytest-cov`, `responses`, `ruff`):
+
+```bash
+pip install -e ".[dev]"
 ```
 
 ### 4. Configure environment variables
@@ -147,7 +153,7 @@ The `output/` directory is excluded from version control via `.gitignore`.
 ```
 chesscom/
 ├── .env.template          # Environment variable template
-├── requirements.txt       # Python dependencies
+├── pyproject.toml         # Python dependencies and tooling configuration
 ├── src/
 │   ├── club_contribution_report.py
 │   ├── generate_club_member_report.py
