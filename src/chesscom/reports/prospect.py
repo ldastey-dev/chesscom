@@ -67,7 +67,10 @@ class ProspectReport(BaseReport):
         results: list[dict] = []
         for username, source_club in eligible:
             profile = self.client.get_player_profile(username)
-            stats = self.client.get_player_stats(username)
+            try:
+                stats = self.client.get_player_stats(username)
+            except Exception:
+                stats = {}
             member = Member.from_api_response(profile, stats)
             results.append(self._to_row(member, source_club))
 
