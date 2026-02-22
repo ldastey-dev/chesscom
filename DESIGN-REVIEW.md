@@ -442,3 +442,34 @@ Each action below is a self-contained prompt that should be executed sequentiall
 ---
 
 *This review recommends executing the 13 remedial actions in order. Actions 1–3 are preparatory (docs, deps, tests). Actions 4–10 are the core refactoring. Actions 11–13 are integration and finalisation. Do not skip Action 3 — tests must exist before refactoring begins.*
+
+---
+
+## 9. Resolution Status
+
+All 13 remedial actions have been completed. The table below maps each action to
+its corresponding pull request and the test count at the time of merge.
+
+| Action | Title | PR | Tests at merge |
+|---|---|---|---|
+| 1 | Add README and pyproject.toml | [#2](https://github.com/ldastey-dev/chesscom/pull/2) | — |
+| 2 | Pin dependencies in pyproject.toml | [#3](https://github.com/ldastey-dev/chesscom/pull/3) | — |
+| 3 | Add initial test suite | [#4](https://github.com/ldastey-dev/chesscom/pull/4) | 27 |
+| 4 | Add GitHub Actions CI workflow | [#5](https://github.com/ldastey-dev/chesscom/pull/5) | 27 |
+| 5 | Extract shared utilities | [#6](https://github.com/ldastey-dev/chesscom/pull/6) | 27 |
+| 6 | Add ChessComClient API wrapper | [#7](https://github.com/ldastey-dev/chesscom/pull/7) | 56 |
+| 7 | Add domain models | [#8](https://github.com/ldastey-dev/chesscom/pull/8) / [#9](https://github.com/ldastey-dev/chesscom/pull/9) | 163 |
+| 8 | Add ExcelReportWriter | [#10](https://github.com/ldastey-dev/chesscom/pull/10) | 185 |
+| 9 | Add AppConfig | [#11](https://github.com/ldastey-dev/chesscom/pull/11) | 214 |
+| 10 | Add report classes (BaseReport + 4 concrete reports) | [#12](https://github.com/ldastey-dev/chesscom/pull/12) | 255 |
+| 11 | Add CLI entry point; remove legacy scripts | [#13](https://github.com/ldastey-dev/chesscom/pull/13) | 240 |
+| 12 | Fix GitHub Actions workflow | Completed as part of Actions 4 & 11 | 240 |
+| 13 | Update all documentation | [#14](https://github.com/ldastey-dev/chesscom/pull/14) | 240 |
+
+### Final state (post Action 13)
+
+- **240 tests** passing across Python 3.11 and 3.12
+- **ruff** clean (0 errors)
+- All legacy scripts removed; single `python -m chesscom <subcommand>` entry point
+- Full Google-style docstrings on every public class and function
+- README, `.env.template`, and `.vscode/settings.json` reflect the current codebase
