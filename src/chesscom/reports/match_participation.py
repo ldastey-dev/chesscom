@@ -63,8 +63,11 @@ class MatchParticipationReport(BaseReport):
         # --- Matches (filtered by year) ------------------------------------
         raw_matches_resp = self.client.get_club_matches(self.config.club_ref)
         raw_finished = raw_matches_resp.get("finished", [])
+        raw_in_progress = raw_matches_resp.get("in_progress", [])
+        raw_all = raw_finished + raw_in_progress
         raw_in_year = [
-            m for m in raw_finished
+            m
+            for m in raw_all
             if datetime.fromtimestamp(m.get("start_time", 0), tz=UTC).year >= year
         ]
 
@@ -104,20 +107,22 @@ class MatchParticipationReport(BaseReport):
                     match_meta[i][f"{username}_white"] = "not played"
                     match_meta[i][f"{username}_black"] = "not played"
 
-            members_data.append({
-                "Username": member.username,
-                "Daily Rating": (
-                    member.daily_rating if member.daily_rating is not None else "Unrated"
-                ),
-                "Joined Chess.com": _fmt(member.joined_chess_com),
-                "Joined Club": _fmt(member.joined_club),
-                "Last Online": _fmt(member.last_online),
-                "Timeout Percentage": member.timeout_percent,
-                "Club Timeouts": participation.timeouts,
-                "Total Matches": participation.matches_played,
-                "Participation %": participation.participation_pct,
-                "Win Rate %": participation.win_rate_pct,
-            })
+            members_data.append(
+                {
+                    "Username": member.username,
+                    "Daily Rating": (
+                        member.daily_rating if member.daily_rating is not None else "Unrated"
+                    ),
+                    "Joined Chess.com": _fmt(member.joined_chess_com),
+                    "Joined Club": _fmt(member.joined_club),
+                    "Last Online": _fmt(member.last_online),
+                    "Timeout Percentage": member.timeout_percent,
+                    "Club Timeouts": participation.timeouts,
+                    "Total Matches": participation.matches_played,
+                    "Participation %": participation.participation_pct,
+                    "Win Rate %": participation.win_rate_pct,
+                }
+            )
 
         self._matches_data = match_meta
         return members_data
