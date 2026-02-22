@@ -46,11 +46,9 @@ _STATS = {
     },
 }
 
-_CLUB_MEMBERS = {
-    "weekly": [{"username": "alice", "joined": 1_600_000_000}],
-    "monthly": [],
-    "all_time": [],
-}
+_CLUB_MEMBERS = [
+    {"username": "alice", "joined": 1_600_000_000},
+]
 
 _MATCH_DATA = {
     "name": "League Match 1",
@@ -158,14 +156,10 @@ class TestMemberSummaryReport:
         assert os.path.isfile(path)
 
     def test_multiple_members(self):
-        club_members = {
-            "weekly": [
-                {"username": "alice", "joined": 1_600_000_000},
-                {"username": "bob", "joined": 1_600_000_001},
-            ],
-            "monthly": [],
-            "all_time": [],
-        }
+        club_members = [
+            {"username": "alice", "joined": 1_600_000_000},
+            {"username": "bob", "joined": 1_600_000_001},
+        ]
         bob_profile = {**_PROFILE, "username": "bob", "name": "Bob Jones"}
         client = _make_client(club_members=club_members)
         client.get_player_profile.side_effect = [_PROFILE, bob_profile]
@@ -211,7 +205,7 @@ class TestProspectReport:
         """Duplicate across two clubs → only one row."""
         config = _make_config(prospect_clubs=["team-ireland", "team-england"])
         # Both clubs return the same member "alice"
-        alice_members = {"weekly": [{"username": "alice", "joined": 1_600_000_000}], "monthly": [], "all_time": []}
+        alice_members = [{"username": "alice", "joined": 1_600_000_000}]
         client = _make_client(club_members=alice_members)
         r = ProspectReport(client, config)
         data = r.collect_data()
@@ -281,11 +275,9 @@ class TestMatchEligibilityReport:
 
     def test_signed_up_flag_no_for_non_participant(self):
         """bob is eligible but not in participants → Signed Up: No."""
-        club_members = {
-            "weekly": [{"username": "bob", "joined": 1_600_000_000}],
-            "monthly": [],
-            "all_time": [],
-        }
+        club_members = [
+            {"username": "bob", "joined": 1_600_000_000},
+        ]
         bob_profile = {**_PROFILE, "username": "bob"}
         client = _make_client(club_members=club_members)
         client.get_player_profile.return_value = bob_profile

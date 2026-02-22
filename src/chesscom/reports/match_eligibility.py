@@ -124,12 +124,8 @@ class MatchEligibilityReport(BaseReport):
     # ------------------------------------------------------------------
 
     def _all_club_members(self) -> list[dict]:
-        data = self.client.get_club_members(self.config.club_ref)
-        return (
-            data.get("weekly", [])
-            + data.get("monthly", [])
-            + data.get("all_time", [])
-        )
+        # get_club_members returns a flat list, not a dict
+        return self.client.get_club_members(self.config.club_ref)
 
 
 def _fmt(dt: datetime | None) -> str:
