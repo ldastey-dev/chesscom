@@ -89,6 +89,8 @@ def main(club):
 
 
 if __name__ == "__main__":
+    utils.init()
+
     try:
         main(os.getenv('CLUB_REF'))
     except Exception as e:

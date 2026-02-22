@@ -3,12 +3,8 @@ import time
 from datetime import datetime, timezone
 
 import pandas as pd
-from dotenv import load_dotenv
 
 import utils
-
-load_dotenv()
-
 
 # Environment variables
 CLUB_REF = os.getenv('CLUB_REF')
@@ -245,4 +241,5 @@ def main():
 
 
 if __name__ == "__main__":
+    utils.init()
     main()

@@ -95,6 +95,8 @@ def main(clubs, exclusion_club):
 
 
 if __name__ == "__main__":
+    utils.init()
+
     exclusion_club = 'team-scotland'
     clubs = os.getenv('LIST_OF_CLUBS').split(',')
 
