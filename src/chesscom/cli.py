@@ -86,13 +86,22 @@ _HANDLERS = {
 }
 
 
+class _HelpOnErrorParser(argparse.ArgumentParser):
+    """ArgumentParser that prints full help on any usage error."""
+
+    def error(self, message: str) -> None:  # noqa: D102
+        print(f"error: {message}\n", file=sys.stderr)
+        self.print_help(sys.stderr)
+        sys.exit(2)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Construct and return the top-level :class:`argparse.ArgumentParser`.
 
     Returns:
         Fully configured parser with all four subcommands registered.
     """
-    parser = argparse.ArgumentParser(
+    parser = _HelpOnErrorParser(
         prog="chesscom",
         description="Chess.com club management tools.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
