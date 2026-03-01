@@ -33,20 +33,8 @@ class ProspectReport(BaseReport):
         return "Member Prospects"
 
     def collect_data(self) -> list[dict]:
-        """Aggregate prospects across all configured source clubs.
-
-        Returns:
-            One dict per unique eligible prospect.
-        """
-        # 1. Gather raw (username, source_club) pairs from all prospect clubs
-        all_raw: list[tuple[str, str]] = []
-        for club in self.config.prospect_clubs:
-            for raw in self._all_members(club):
-                username = raw.get("username", "")
-                if username:
-                    all_raw.append((username, club))
-
-        # 2. Build exclusion set (case-insensitive)
+        """Aggregate prospects from configured clubs, excluding current club members."""
+        # Build exclusion set from main club (not prospect clubs)
         exclusion_lower: set[str] = set()
         if self.config.exclusion_club:
             for raw in self._all_members(self.config.exclusion_club):
@@ -54,16 +42,19 @@ class ProspectReport(BaseReport):
                 if u:
                     exclusion_lower.add(u.lower())
 
-        # 3. Filter and de-duplicate by username
+        # Gather prospects from other clubs, excluding those in exclusion club
         seen: set[str] = set()
         eligible: list[tuple[str, str]] = []
-        for username, club in all_raw:
-            key = username.lower()
-            if key not in exclusion_lower and key not in seen:
-                seen.add(key)
-                eligible.append((username, club))
+        for club in self.config.prospect_clubs:
+            for raw in self._all_members(club):
+                username = raw.get("username", "")
+                if username:
+                    key = username.lower()
+                    if key not in exclusion_lower and key not in seen:
+                        seen.add(key)
+                        eligible.append((username, club))
 
-        # 4. Fetch full data only for eligible, unique members
+        # Fetch full data only for eligible, unique prospects
         results: list[dict] = []
         for username, source_club in eligible:
             profile = self.client.get_player_profile(username)
@@ -81,7 +72,11 @@ class ProspectReport(BaseReport):
     # ------------------------------------------------------------------
 
     def _all_members(self, club_ref: str) -> list[dict]:
-        return self.client.get_club_members(club_ref)
+        try:
+            return self.client.get_club_members(club_ref)
+        except Exception:
+            # Log or print error if needed, but skip club on failure
+            return []
 
     @staticmethod
     def _to_row(m: Member, source_club: str) -> dict:
@@ -91,9 +86,7 @@ class ProspectReport(BaseReport):
             "Name": m.name,
             "Sourced Club": source_club,
             "Daily Rating": m.daily_rating if m.daily_rating is not None else "Unrated",
-            "Chess960 Rating": (
-                m.chess960_rating if m.chess960_rating is not None else "Unrated"
-            ),
+            "Chess960 Rating": (m.chess960_rating if m.chess960_rating is not None else "Unrated"),
             "Timeout Percentage": m.timeout_percent,
             "Last Online": _fmt(m.last_online),
             "Joined Chess.com": _fmt(m.joined_chess_com),
