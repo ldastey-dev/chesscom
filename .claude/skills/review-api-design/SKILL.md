@@ -1,0 +1,7 @@
+---
+name: review-api-design
+description: "API design review checking REST semantics, error response format, versioning, pagination, and OpenAPI contract consistency"
+allowed-tools: "Read, Grep, Glob, Bash(git *)"
+---
+
+Read and follow `.context/playbooks/review/api-design.md` in full.

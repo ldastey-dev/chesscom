@@ -215,6 +215,12 @@ Auto-fix lint issues:
 ruff check --fix .
 ```
 
+### Format
+
+```bash
+ruff format .
+```
+
 ### CI
 
 The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and
