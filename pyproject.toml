@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy~=2.4.0",
     "pandas~=3.0.1",
-    "requests~=2.32.5",
+    "requests~=2.33.0",
     "openpyxl~=3.1.5",
     "python-dotenv~=1.2.1",
 ]
