@@ -77,7 +77,7 @@ class TestGetClubMembers:
             status=404,
         )
         client = make_client(retries=1)
-        with pytest.raises(requests.HTTPError):
+        with pytest.raises(requests.HTTPError, match="member list is set to private"):
             client.get_club_members("bad-club")
 
     @resp.activate
