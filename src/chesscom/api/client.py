@@ -73,20 +73,24 @@ class ChessComClient:
             requests.ConnectionError: On unrecoverable connection failures.
             requests.Timeout: When all retry attempts time out.
         """
-        url = (
-            endpoint
-            if endpoint.startswith("http")
-            else f"{self.base_url}/{endpoint.lstrip('/')}"
-        )
+        url = endpoint if endpoint.startswith("http") else f"{self.base_url}/{endpoint.lstrip('/')}"
 
         for attempt in range(self.retries):
             try:
                 response = requests.get(url, headers=self.headers, timeout=30)
                 response.raise_for_status()
                 return response.json()
-            except (ConnectionError, requests.HTTPError, requests.Timeout) as exc:
+            except (ConnectionError, requests.Timeout) as exc:
                 if attempt < self.retries - 1:
                     time.sleep(self.backoff_factor * (2**attempt))
+                else:
+                    raise exc
+            except requests.HTTPError as exc:
+                if response.status_code == 429 or response.status_code >= 500:
+                    if attempt < self.retries - 1:
+                        time.sleep(self.backoff_factor * (2**attempt))
+                    else:
+                        raise exc
                 else:
                     raise exc
 
@@ -108,12 +112,18 @@ class ChessComClient:
         Returns:
             Flat list of member dicts as returned by the Chess.com API.
         """
-        data = self._get(f"club/{club_ref}/members")
-        return (
-            data.get("weekly", [])
-            + data.get("monthly", [])
-            + data.get("all_time", [])
-        )
+        try:
+            data = self._get(f"club/{club_ref}/members")
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 404:
+                raise requests.HTTPError(
+                    f"Club '{club_ref}' members endpoint returned 404. "
+                    "This usually means the club does not exist or its "
+                    "member list is set to private in club settings.",
+                    response=exc.response,
+                ) from exc
+            raise
+        return data.get("weekly", []) + data.get("monthly", []) + data.get("all_time", [])
 
     def get_player_stats(self, username: str) -> dict:
         """Return raw stats for *username*.
@@ -172,7 +182,5 @@ class ChessComClient:
             per-player results.
         """
         return self._get(
-            match_id_or_url
-            if match_id_or_url.startswith("http")
-            else f"match/{match_id_or_url}"
+            match_id_or_url if match_id_or_url.startswith("http") else f"match/{match_id_or_url}"
         )
