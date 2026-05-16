@@ -5,7 +5,7 @@ description = "Python tools for managing a Chess.com club — member reports, ma
 requires-python = ">=3.11"
 dependencies = [
     "numpy~=2.4.0",
-    "pandas~=3.0.1",
+    "pandas~=3.0.2",
     "requests~=2.32.5",
     "openpyxl~=3.1.5",
     "python-dotenv~=1.2.1",
