@@ -264,6 +264,30 @@ class TestTimeoutThresholdHours:
         with pytest.raises(ValueError, match="TIMEOUT_THRESHOLD_HOURS"):
             AppConfig.from_env()
 
+    def test_negative_value_raises(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "-5")
+        with pytest.raises(ValueError, match="positive"):
+            AppConfig.from_env()
+
+    def test_zero_value_raises(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "0")
+        with pytest.raises(ValueError, match="positive"):
+            AppConfig.from_env()
+
+    def test_infinity_raises(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "inf")
+        with pytest.raises(ValueError, match="positive"):
+            AppConfig.from_env()
+
+    def test_nan_raises(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "nan")
+        with pytest.raises(ValueError, match="positive"):
+            AppConfig.from_env()
+
 
 # ===========================================================================
 # Full happy path

@@ -13,6 +13,7 @@ from collections import Counter
 from datetime import UTC, datetime
 
 import pandas as pd
+import requests
 
 from chesscom.domain.models import TimeoutAlert
 from chesscom.domain.services import calculate_hours_remaining, is_timeout_risk
@@ -45,6 +46,7 @@ class TimeoutCheckReport(BaseReport):
         super().__init__(client, config)
         self._match_ids = match_ids
         self._alerts: list[TimeoutAlert] = []
+        self._skipped_boards: list[str] = []
 
     def get_report_name(self) -> str:
         return "Timeout Check Report"
@@ -64,6 +66,7 @@ class TimeoutCheckReport(BaseReport):
         """
         raw_matches = self._resolve_matches()
         alerts: list[TimeoutAlert] = []
+        self._skipped_boards = []
 
         for raw in raw_matches:
             url: str = raw.get("@id", "")
@@ -195,33 +198,45 @@ class TimeoutCheckReport(BaseReport):
         Returns:
             Formatted multi-line string suitable for printing to stdout.
         """
-        if not self._alerts:
+        if not self._alerts and not self._skipped_boards:
             return "No timeout issues found across checked matches."
 
-        # Group alerts by match
-        by_match: dict[str, list[TimeoutAlert]] = {}
-        for alert in self._alerts:
-            key = f"{alert.match_name} (ID: {alert.match_id})"
-            by_match.setdefault(key, []).append(alert)
+        lines: list[str] = []
 
-        lines: list[str] = ["=== Timeout Check Summary ===", ""]
-        for match_label, match_alerts in by_match.items():
-            timed_out = [a for a in match_alerts if a.status == "timed_out"]
-            at_risk = [a for a in match_alerts if a.status == "at_risk"]
-            lines.append(f"Match: {match_label}")
+        if self._alerts:
+            # Group alerts by match
+            by_match: dict[str, list[TimeoutAlert]] = {}
+            for alert in self._alerts:
+                key = f"{alert.match_name} (ID: {alert.match_id})"
+                by_match.setdefault(key, []).append(alert)
 
-            parts: list[str] = []
-            if at_risk:
-                parts.append(f"{len(at_risk)} at risk")
-            if timed_out:
-                parts.append(f"{len(timed_out)} timed out")
-            lines.append(f"  {', '.join(parts)}")
+            lines.extend(["=== Timeout Check Summary ===", ""])
+            for match_label, match_alerts in by_match.items():
+                timed_out = [a for a in match_alerts if a.status == "timed_out"]
+                at_risk = [a for a in match_alerts if a.status == "at_risk"]
+                lines.append(f"Match: {match_label}")
 
-            for a in timed_out:
-                lines.append(f"  TIMED OUT: {a.username} ({a.colour})")
-            for a in at_risk:
-                hrs = f"{a.hours_remaining:.1f}" if a.hours_remaining is not None else "?"
-                lines.append(f"  AT RISK:  {a.username} ({a.colour}) — {hrs} hours remaining")
+                parts: list[str] = []
+                if at_risk:
+                    parts.append(f"{len(at_risk)} at risk")
+                if timed_out:
+                    parts.append(f"{len(timed_out)} timed out")
+                lines.append(f"  {', '.join(parts)}")
+
+                for a in timed_out:
+                    lines.append(f"  TIMED OUT: {a.username} ({a.colour})")
+                for a in at_risk:
+                    hrs = f"{a.hours_remaining:.1f}" if a.hours_remaining is not None else "?"
+                    lines.append(f"  AT RISK:  {a.username} ({a.colour}) — {hrs} hours remaining")
+                lines.append("")
+        else:
+            lines.append("No timeout issues found across checked matches.")
+            lines.append("")
+
+        if self._skipped_boards:
+            lines.append(f"Warning: {len(self._skipped_boards)} board(s) could not be checked:")
+            for url in self._skipped_boards:
+                lines.append(f"  - {url}")
             lines.append("")
 
         return "\n".join(lines)
@@ -257,7 +272,8 @@ class TimeoutCheckReport(BaseReport):
         """Fetch board data and append at-risk alerts for our team's players."""
         try:
             board_data = self.client.get_match_board(board_url)
-        except Exception:
+        except requests.RequestException:
+            self._skipped_boards.append(board_url)
             return
 
         club_ref_lower = self.config.club_ref.lower()
@@ -305,9 +321,10 @@ class TimeoutCheckReport(BaseReport):
     @staticmethod
     def _is_our_player(team_url: str, club_ref_lower: str) -> bool:
         """Check if a player belongs to our club using the team URL."""
-        if team_url:
-            return club_ref_lower in team_url.lower()
-        return False
+        if not team_url:
+            return False
+        slug = team_url.rstrip("/").rsplit("/", 1)[-1].lower()
+        return slug == club_ref_lower
 
     @staticmethod
     def _alerts_to_rows(alerts: list[TimeoutAlert]) -> list[dict]:

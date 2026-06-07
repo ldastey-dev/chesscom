@@ -117,6 +117,12 @@ class AppConfig:
                 raise ValueError(
                     f"TIMEOUT_THRESHOLD_HOURS must be a number; got '{raw_threshold}'"
                 ) from exc
+            import math
+
+            if not math.isfinite(timeout_threshold_hours) or timeout_threshold_hours <= 0:
+                raise ValueError(
+                    f"TIMEOUT_THRESHOLD_HOURS must be a positive number; got '{raw_threshold}'"
+                )
 
         return cls(
             club_ref=club_ref,

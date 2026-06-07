@@ -709,3 +709,27 @@ class TestTimeoutCheckReport:
             "Hours Remaining",
         ):
             assert col in row, f"Missing column: {col}"
+
+    def test_at_risk_not_flagged_for_similar_club_slug(self):
+        """team-scotland should not match team-scotland-juniors."""
+        board_data = _make_board_data(2)
+        board_data["games"][0]["white"]["team"] = (
+            "https://api.chess.com/pub/club/team-scotland-juniors"
+        )
+        client = _make_timeout_client(board_data=board_data)
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        at_risk = [row for row in data if row["Status"] == "At Risk"]
+        assert len(at_risk) == 0
+
+    def test_board_fetch_failure_recorded_in_summary(self):
+        """Failed board fetches should appear as warnings in the console summary."""
+        import requests as _requests
+
+        client = _make_timeout_client()
+        client.get_match_board.side_effect = _requests.ConnectionError("timeout")
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        r.collect_data()
+        summary = r.format_console_summary()
+        assert "Warning" in summary
+        assert "could not be checked" in summary

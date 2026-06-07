@@ -55,17 +55,17 @@ def _apply_cli_overrides(config: AppConfig, args: argparse.Namespace) -> AppConf
     """
     overrides: dict = {}
 
-    if getattr(args, "club_ref", None):
+    if getattr(args, "club_ref", None) is not None:
         overrides["club_ref"] = args.club_ref
-    if getattr(args, "club_name", None):
+    if getattr(args, "club_name", None) is not None:
         overrides["club_name"] = args.club_name
-    if getattr(args, "match_id", None):
+    if getattr(args, "match_id", None) is not None:
         overrides["match_id"] = args.match_id
     if getattr(args, "year", None) is not None:
         overrides["data_analysis_year"] = args.year
-    if getattr(args, "clubs", None):
+    if getattr(args, "clubs", None) is not None:
         overrides["prospect_clubs"] = args.clubs
-    if getattr(args, "exclusion_club", None):
+    if getattr(args, "exclusion_club", None) is not None:
         overrides["exclusion_club"] = args.exclusion_club
     if getattr(args, "threshold", None) is not None:
         overrides["timeout_threshold_hours"] = args.threshold

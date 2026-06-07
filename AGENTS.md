@@ -74,7 +74,7 @@ Dependencies point inward. This is non-negotiable.
 ```text
 Presentation   cli.py, __main__.py
     ↓
-Application    reports/*.py  (BaseReport ABC + 4 concrete reports)
+Application    reports/*.py  (BaseReport ABC + 5 concrete reports)
     ↓
 Domain         domain/models.py, domain/services.py
     ↓

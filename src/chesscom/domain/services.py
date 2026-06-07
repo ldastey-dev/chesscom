@@ -257,31 +257,41 @@ def build_participation_stats(
 # ---------------------------------------------------------------------------
 
 
-def calculate_hours_remaining(move_by: datetime) -> float:
-    """Return the number of hours between now and *move_by*.
+def calculate_hours_remaining(move_by: datetime, now: datetime | None = None) -> float:
+    """Return the number of hours between *now* and *move_by*.
 
     A negative value means the deadline has already passed.
 
     Args:
         move_by: UTC datetime when the next move must be made.
+        now: Reference time.  Defaults to ``datetime.now(tz=UTC)`` when
+            ``None`` — pass explicitly in tests for determinism.
 
     Returns:
         Hours remaining as a float, rounded to two decimal places.
     """
-    delta = move_by - datetime.now(tz=UTC)
+    if now is None:
+        now = datetime.now(tz=UTC)
+    delta = move_by - now
     return round(delta.total_seconds() / 3600, 2)
 
 
-def is_timeout_risk(move_by: datetime, threshold_hours: float) -> bool:
-    """Return ``True`` when *move_by* is within *threshold_hours* of now.
+def is_timeout_risk(
+    move_by: datetime,
+    threshold_hours: float,
+    now: datetime | None = None,
+) -> bool:
+    """Return ``True`` when *move_by* is within *threshold_hours* of *now*.
 
     A ``move_by`` that has already passed is always considered at risk.
 
     Args:
         move_by: UTC datetime when the next move must be made.
         threshold_hours: Maximum acceptable hours remaining.
+        now: Reference time.  Defaults to ``datetime.now(tz=UTC)`` when
+            ``None``.
 
     Returns:
         ``True`` if the remaining time is at or below the threshold.
     """
-    return calculate_hours_remaining(move_by) <= threshold_hours
+    return calculate_hours_remaining(move_by, now) <= threshold_hours
