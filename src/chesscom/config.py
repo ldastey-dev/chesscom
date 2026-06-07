@@ -25,6 +25,9 @@ Optional:
                       Number of hours remaining below which an in-progress
                       game is flagged as at risk of timing out.  Parsed to
                       ``float``; defaults to ``5.0`` if blank.
+  TIMEOUT_MATCH_IDS   Comma-separated list of match IDs for the timeout-check
+                      report.  Use ``all`` to check every in-progress match.
+                      May also be supplied via CLI positional args.
 """
 
 from __future__ import annotations
@@ -52,6 +55,9 @@ class AppConfig:
         timeout_threshold_hours: Number of hours remaining on the clock
             below which a game is flagged as at risk of timing out.
             Defaults to ``5.0``.
+        timeout_match_ids: List of match IDs to check in the timeout-check
+            report.  Use ``["all"]`` to check all in-progress matches.
+            Empty list means no matches configured (must be supplied via CLI).
     """
 
     club_ref: str
@@ -61,6 +67,7 @@ class AppConfig:
     prospect_clubs: list[str] = field(default_factory=list)
     exclusion_club: str | None = field(default=None)
     timeout_threshold_hours: float = field(default=5.0)
+    timeout_match_ids: list[str] = field(default_factory=list)
 
     # ------------------------------------------------------------------
     # Factory
@@ -124,6 +131,9 @@ class AppConfig:
                     f"TIMEOUT_THRESHOLD_HOURS must be a positive number; got '{raw_threshold}'"
                 )
 
+        raw_match_ids = os.getenv("TIMEOUT_MATCH_IDS", "")
+        timeout_match_ids = [m.strip() for m in raw_match_ids.split(",") if m.strip()]
+
         return cls(
             club_ref=club_ref,
             club_name=club_name,
@@ -132,4 +142,5 @@ class AppConfig:
             prospect_clubs=prospect_clubs,
             exclusion_club=exclusion_club,
             timeout_threshold_hours=timeout_threshold_hours,
+            timeout_match_ids=timeout_match_ids,
         )

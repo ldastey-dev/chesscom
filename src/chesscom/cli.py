@@ -114,7 +114,13 @@ def _handle_match_eligibility(args: argparse.Namespace) -> None:
 
 def _handle_timeout_check(args: argparse.Namespace) -> None:
     config = _apply_cli_overrides(AppConfig.from_env(), args)
-    report = TimeoutCheckReport(ChessComClient(), config, match_ids=args.match_ids)
+    match_ids = args.match_ids if args.match_ids else config.timeout_match_ids
+    if not match_ids:
+        raise ValueError(
+            "No match IDs provided. Supply them as positional arguments "
+            "or set TIMEOUT_MATCH_IDS in your .env file."
+        )
+    report = TimeoutCheckReport(ChessComClient(), config, match_ids=match_ids)
     start = time.monotonic()
     path = report.run()
     elapsed = time.monotonic() - start
@@ -280,11 +286,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tc_parser.add_argument(
         "match_ids",
-        nargs="+",
+        nargs="*",
         metavar="MATCH_ID",
         help=(
             'One or more match IDs to check, or "all" to check every '
-            "in-progress match for the configured club."
+            "in-progress match for the configured club. "
+            "Falls back to TIMEOUT_MATCH_IDS env var if not provided."
         ),
     )
     tc_parser.add_argument(

@@ -304,9 +304,9 @@ class TestTimeoutCheckParser:
         args = build_parser().parse_args(["timeout-check", "999"])
         assert args.threshold is None
 
-    def test_timeout_check_no_ids_exits(self):
-        with pytest.raises(SystemExit):
-            build_parser().parse_args(["timeout-check"])
+    def test_timeout_check_no_ids_gives_empty_list(self):
+        args = build_parser().parse_args(["timeout-check"])
+        assert args.match_ids == []
 
 
 # ===========================================================================
@@ -476,3 +476,34 @@ class TestTimeoutCheckRouting:
 
         passed_config = mock_cls.call_args[0][1]
         assert passed_config.timeout_threshold_hours == 24.0
+
+    def test_timeout_check_falls_back_to_env_match_ids(self):
+        """When no CLI match IDs given, uses config.timeout_match_ids."""
+        config = _make_config()
+        config = config.__class__(**{**config.__dict__, "timeout_match_ids": ["555", "666"]})
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+        mock_instance.format_console_summary.return_value = ""
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.TimeoutCheckReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["timeout-check"])
+
+        _, kwargs = mock_cls.call_args
+        assert kwargs["match_ids"] == ["555", "666"]
+
+    def test_timeout_check_no_ids_anywhere_raises(self):
+        """Error when no CLI args and no TIMEOUT_MATCH_IDS configured."""
+        config = _make_config()
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                main(["timeout-check"])
+        assert exc_info.value.code == 1
