@@ -223,6 +223,49 @@ class TestExclusionClub:
 
 
 # ===========================================================================
+# Optional field — timeout_threshold_hours
+# ===========================================================================
+
+
+class TestTimeoutThresholdHours:
+    def test_absent_defaults_to_5(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.delenv("TIMEOUT_THRESHOLD_HOURS", raising=False)
+        cfg = AppConfig.from_env()
+        assert cfg.timeout_threshold_hours == 5.0
+
+    def test_parsed_to_float(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "3.5")
+        cfg = AppConfig.from_env()
+        assert cfg.timeout_threshold_hours == 3.5
+
+    def test_integer_value_parsed(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "10")
+        cfg = AppConfig.from_env()
+        assert cfg.timeout_threshold_hours == 10.0
+
+    def test_whitespace_stripped_then_parsed(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "  7.5  ")
+        cfg = AppConfig.from_env()
+        assert cfg.timeout_threshold_hours == 7.5
+
+    def test_empty_string_defaults_to_5(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "")
+        cfg = AppConfig.from_env()
+        assert cfg.timeout_threshold_hours == 5.0
+
+    def test_non_numeric_raises(self, monkeypatch):
+        _set_required(monkeypatch)
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "abc")
+        with pytest.raises(ValueError, match="TIMEOUT_THRESHOLD_HOURS"):
+            AppConfig.from_env()
+
+
+# ===========================================================================
 # Full happy path
 # ===========================================================================
 
@@ -235,6 +278,7 @@ class TestFullHappyPath:
         monkeypatch.setenv("MATCH_ID", "99999")
         monkeypatch.setenv("LIST_OF_CLUBS", "team-ireland,team-england")
         monkeypatch.setenv("EXCLUSION_CLUB", "team-scotland")
+        monkeypatch.setenv("TIMEOUT_THRESHOLD_HOURS", "10")
         cfg = AppConfig.from_env()
         assert cfg.club_ref == "team-scotland"
         assert cfg.club_name == "Team Scotland"
@@ -242,6 +286,7 @@ class TestFullHappyPath:
         assert cfg.match_id == "99999"
         assert cfg.prospect_clubs == ["team-ireland", "team-england"]
         assert cfg.exclusion_club == "team-scotland"
+        assert cfg.timeout_threshold_hours == 10.0
 
     def test_returns_appconfig_instance(self, monkeypatch):
         _set_required(monkeypatch)

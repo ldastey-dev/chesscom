@@ -14,6 +14,8 @@ Test strategy
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime
+from datetime import timedelta as td
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,6 +25,7 @@ from chesscom.reports.match_eligibility import MatchEligibilityReport
 from chesscom.reports.match_participation import MatchParticipationReport
 from chesscom.reports.member_summary import MemberSummaryReport
 from chesscom.reports.prospect import ProspectReport
+from chesscom.reports.timeout_check import TimeoutCheckReport
 
 # ---------------------------------------------------------------------------
 # Shared fixtures / factories
@@ -130,9 +133,17 @@ class TestMemberSummaryReport:
     def test_collect_data_has_expected_columns(self):
         r = MemberSummaryReport(_make_client(), _make_config())
         row = r.collect_data()[0]
-        for col in ("FIDE Title", "Username", "Name", "Joined Chess.com",
-                    "Joined Club", "Last Online", "Daily Rating",
-                    "Chess960 Rating", "Timeout Percentage"):
+        for col in (
+            "FIDE Title",
+            "Username",
+            "Name",
+            "Joined Chess.com",
+            "Joined Club",
+            "Last Online",
+            "Daily Rating",
+            "Chess960 Rating",
+            "Timeout Percentage",
+        ):
             assert col in row, f"Missing column: {col}"
 
     def test_collect_data_daily_rating(self):
@@ -220,9 +231,17 @@ class TestProspectReport:
     def test_collect_data_columns(self):
         r = ProspectReport(_make_client(), _make_config())
         row = r.collect_data()[0]
-        for col in ("FIDE Title", "Username", "Name", "Sourced Club",
-                    "Daily Rating", "Chess960 Rating", "Timeout Percentage",
-                    "Last Online", "Joined Chess.com"):
+        for col in (
+            "FIDE Title",
+            "Username",
+            "Name",
+            "Sourced Club",
+            "Daily Rating",
+            "Chess960 Rating",
+            "Timeout Percentage",
+            "Last Online",
+            "Joined Chess.com",
+        ):
             assert col in row, f"Missing column: {col}"
 
     def test_full_data_not_fetched_for_excluded_member(self):
@@ -257,8 +276,15 @@ class TestMatchEligibilityReport:
     def test_collect_data_columns(self):
         r = MatchEligibilityReport(_make_client(), _make_config())
         row = r.collect_data()[0]
-        for col in ("Username", "Daily Rating", "Chess960 Rating",
-                    "Variant", "Last Online", "Timeout Percentage", "Signed Up"):
+        for col in (
+            "Username",
+            "Daily Rating",
+            "Chess960 Rating",
+            "Variant",
+            "Last Online",
+            "Timeout Percentage",
+            "Signed Up",
+        ):
             assert col in row, f"Missing column: {col}"
 
     def test_collect_data_raises_when_no_match_id(self):
@@ -291,9 +317,7 @@ class TestMatchEligibilityReport:
             **_MATCH_DATA,
             "settings": {"max_rating": 1000, "rules": "chess"},
         }
-        r = MatchEligibilityReport(
-            _make_client(match_data=match_data), _make_config()
-        )
+        r = MatchEligibilityReport(_make_client(match_data=match_data), _make_config())
         data = r.collect_data()
         # alice's 1500 > 1000 → no rows
         assert data == []
@@ -309,9 +333,7 @@ class TestMatchEligibilityReport:
             **_MATCH_DATA,
             "settings": {"max_rating": 1800, "rules": "chess960"},
         }
-        r = MatchEligibilityReport(
-            _make_client(match_data=match_data), _make_config()
-        )
+        r = MatchEligibilityReport(_make_client(match_data=match_data), _make_config())
         data = r.collect_data()
         assert data[0]["Variant"] == "CHESS960"
 
@@ -321,9 +343,7 @@ class TestMatchEligibilityReport:
             **_MATCH_DATA,
             "settings": {"rules": "chess"},  # no max_rating key
         }
-        r = MatchEligibilityReport(
-            _make_client(match_data=match_data), _make_config()
-        )
+        r = MatchEligibilityReport(_make_client(match_data=match_data), _make_config())
         data = r.collect_data()
         assert len(data) == 1  # alice still included
 
@@ -349,10 +369,18 @@ class TestMatchParticipationReport:
     def test_collect_data_columns(self):
         r = MatchParticipationReport(_make_client(), _make_config())
         row = r.collect_data()[0]
-        for col in ("Username", "Daily Rating", "Joined Chess.com",
-                    "Joined Club", "Last Online", "Timeout Percentage",
-                    "Club Timeouts", "Total Matches",
-                    "Participation %", "Win Rate %"):
+        for col in (
+            "Username",
+            "Daily Rating",
+            "Joined Chess.com",
+            "Joined Club",
+            "Last Online",
+            "Timeout Percentage",
+            "Club Timeouts",
+            "Total Matches",
+            "Participation %",
+            "Win Rate %",
+        ):
             assert col in row, f"Missing column: {col}"
 
     def test_collect_data_raises_when_no_year(self):
@@ -365,12 +393,12 @@ class TestMatchParticipationReport:
         """Matches from 2023 should be excluded when year=2024."""
         club_matches = {
             "finished": [
-                {   # 2023 match — should be excluded
+                {  # 2023 match — should be excluded
                     "@id": "https://api.chess.com/pub/match/100",
                     "name": "Old Match",
                     "start_time": 1_672_531_200,  # 2023-01-01
                 },
-                {   # 2024 match — should be included
+                {  # 2024 match — should be included
                     "@id": "https://api.chess.com/pub/match/999",
                     "name": "League Match 1",
                     "start_time": 1_704_067_200,  # 2024-01-01
@@ -475,3 +503,209 @@ class TestRunCreatesFile:
         r = MatchParticipationReport(_make_client(), _make_config())
         path = _run_with_tmpdir(r, tmp_path)
         assert os.path.isfile(path)
+
+    def test_timeout_check_run(self, tmp_path):
+        client = _make_timeout_client()
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        path = _run_with_tmpdir(r, tmp_path)
+        assert os.path.isfile(path)
+
+
+# ===========================================================================
+# TimeoutCheckReport — test data
+# ===========================================================================
+
+_IN_PROGRESS_MATCH_DATA = {
+    "name": "League Match Live",
+    "start_time": 1_704_067_200,
+    "settings": {"rules": "chess"},
+    "teams": {
+        "team1": {
+            "name": "Team Scotland",
+            "players": [
+                {
+                    "username": "alice",
+                    "board": "https://api.chess.com/pub/match/999/1",
+                    "played_as_white": "timeout",
+                    "played_as_black": "win",
+                },
+                {
+                    "username": "bob",
+                    "board": "https://api.chess.com/pub/match/999/2",
+                    # No played_as_white/black — both games in progress
+                },
+            ],
+        },
+        "team2": {"name": "Opponents", "players": []},
+    },
+}
+
+_NO_TIMEOUT_MATCH_DATA = {
+    "name": "Clean Match",
+    "start_time": 1_704_067_200,
+    "settings": {"rules": "chess"},
+    "teams": {
+        "team1": {
+            "name": "Team Scotland",
+            "players": [
+                {
+                    "username": "alice",
+                    "board": "https://api.chess.com/pub/match/999/1",
+                    "played_as_white": "win",
+                    "played_as_black": "win",
+                },
+            ],
+        },
+        "team2": {"name": "Opponents", "players": []},
+    },
+}
+
+_CLUB_MATCHES_IN_PROGRESS = {
+    "finished": [],
+    "in_progress": [
+        {
+            "@id": "https://api.chess.com/pub/match/999",
+            "name": "League Match Live",
+            "start_time": 1_704_067_200,
+        }
+    ],
+    "registered": [],
+}
+
+
+def _make_board_data(hours_from_now: float) -> dict:
+    """Build board data with a game whose move_by is *hours_from_now* away."""
+    move_by_ts = int((datetime.now(tz=UTC) + td(hours=hours_from_now)).timestamp())
+    return {
+        "board_scores": {},
+        "games": [
+            {
+                "white": {
+                    "username": "bob",
+                    "team": "https://api.chess.com/pub/club/team-scotland",
+                },
+                "black": {
+                    "username": "opponent1",
+                    "team": "https://api.chess.com/pub/club/opponents",
+                },
+                "turn": "white",
+                "move_by": move_by_ts,
+                "time_control": "1/259200",
+                "time_class": "daily",
+                "rules": "chess",
+            }
+        ],
+    }
+
+
+def _make_timeout_client(match_data=None, board_data=None, club_matches=None):
+    client = MagicMock()
+    client.get_match.return_value = match_data or _IN_PROGRESS_MATCH_DATA
+    client.get_match_board.return_value = board_data or _make_board_data(2)
+    client.get_club_matches.return_value = club_matches or _CLUB_MATCHES_IN_PROGRESS
+    return client
+
+
+# ===========================================================================
+# TimeoutCheckReport
+# ===========================================================================
+
+
+class TestTimeoutCheckReport:
+    def test_get_report_name(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        assert r.get_report_name() == "Timeout Check Report"
+
+    def test_collect_data_detects_completed_timeout(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        timed_out = [row for row in data if row["Status"] == "Timed Out"]
+        assert len(timed_out) >= 1
+        assert timed_out[0]["Username"] == "alice"
+        assert timed_out[0]["Colour"] == "white"
+
+    def test_collect_data_detects_at_risk(self):
+        # bob has no results + board shows move_by 2h away, threshold 5h
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        at_risk = [row for row in data if row["Status"] == "At Risk"]
+        assert len(at_risk) >= 1
+        assert at_risk[0]["Username"] == "bob"
+
+    def test_collect_data_no_at_risk_when_safe(self):
+        # move_by is 48h away, threshold 5h → not at risk
+        client = _make_timeout_client(board_data=_make_board_data(48))
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        at_risk = [row for row in data if row["Status"] == "At Risk"]
+        assert len(at_risk) == 0
+
+    def test_collect_data_no_alerts_for_clean_match(self):
+        client = _make_timeout_client(match_data=_NO_TIMEOUT_MATCH_DATA)
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        assert len(data) == 0
+
+    def test_build_sheet_configs_produces_two_sheets(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        configs = r.build_sheet_configs(data)
+        assert len(configs) == 2
+        names = [c.name for c in configs]
+        assert "Timeout Alerts by Match" in names
+        assert "Timeout Summary by Player" in names
+
+    def test_player_summary_sheet_counts_timeouts(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        configs = r.build_sheet_configs(data)
+        player_sheet = next(c for c in configs if c.name == "Timeout Summary by Player")
+        df = player_sheet.dataframe
+        # alice has 1 completed timeout
+        alice_rows = df[df["Username"] == "alice"]
+        assert len(alice_rows) == 1
+        assert alice_rows.iloc[0]["Total Timeouts"] == 1
+
+    def test_format_console_summary_no_alerts(self):
+        client = _make_timeout_client(match_data=_NO_TIMEOUT_MATCH_DATA)
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        r.collect_data()
+        summary = r.format_console_summary()
+        assert "No timeout issues found" in summary
+
+    def test_format_console_summary_with_alerts(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        r.collect_data()
+        summary = r.format_console_summary()
+        assert "TIMED OUT" in summary
+        assert "alice" in summary
+        assert "League Match Live" in summary
+
+    def test_all_keyword_fetches_in_progress(self):
+        client = _make_timeout_client()
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["all"])
+        r.collect_data()
+        client.get_club_matches.assert_called_once_with("team-scotland")
+
+    def test_specific_ids_do_not_fetch_club_matches(self):
+        client = _make_timeout_client()
+        r = TimeoutCheckReport(client, _make_config(), match_ids=["999"])
+        r.collect_data()
+        client.get_club_matches.assert_not_called()
+
+    def test_collect_data_has_expected_columns(self):
+        r = TimeoutCheckReport(_make_timeout_client(), _make_config(), match_ids=["999"])
+        data = r.collect_data()
+        assert len(data) > 0
+        row = data[0]
+        for col in (
+            "Match Name",
+            "Match ID",
+            "Username",
+            "Board",
+            "Colour",
+            "Status",
+            "Move By",
+            "Hours Remaining",
+        ):
+            assert col in row, f"Missing column: {col}"

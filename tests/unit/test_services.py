@@ -10,18 +10,21 @@ members with None ratings, case-insensitive username matching.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from datetime import timedelta as td
 
 import pytest
 
 from chesscom.domain.models import Match, MatchResult, Member, MemberParticipation
 from chesscom.domain.services import (
     build_participation_stats,
+    calculate_hours_remaining,
     calculate_participation_percentage,
     calculate_win_rate,
     classify_result,
     deduplicate_members,
     exclude_members,
     filter_members_by_rating,
+    is_timeout_risk,
 )
 
 # ---------------------------------------------------------------------------
@@ -388,3 +391,57 @@ class TestBuildParticipationStats:
         member = _member("alice")
         stats = build_participation_stats(member, [])
         assert isinstance(stats, MemberParticipation)
+
+
+# ---------------------------------------------------------------------------
+# calculate_hours_remaining
+# ---------------------------------------------------------------------------
+
+
+class TestCalculateHoursRemaining:
+    def test_future_deadline_returns_positive(self):
+        move_by = datetime.now(tz=UTC) + td(hours=2)
+        result = calculate_hours_remaining(move_by)
+        assert abs(result - 2.0) < 0.05
+
+    def test_past_deadline_returns_negative(self):
+        move_by = datetime.now(tz=UTC) - td(hours=1)
+        result = calculate_hours_remaining(move_by)
+        assert abs(result - (-1.0)) < 0.05
+
+    def test_returns_float(self):
+        move_by = datetime.now(tz=UTC) + td(hours=5)
+        assert isinstance(calculate_hours_remaining(move_by), float)
+
+    def test_result_rounded_to_two_decimal_places(self):
+        move_by = datetime.now(tz=UTC) + td(hours=3, minutes=20)
+        result = calculate_hours_remaining(move_by)
+        assert result == round(result, 2)
+
+
+# ---------------------------------------------------------------------------
+# is_timeout_risk
+# ---------------------------------------------------------------------------
+
+
+class TestIsTimeoutRisk:
+    def test_within_threshold_returns_true(self):
+        move_by = datetime.now(tz=UTC) + td(hours=2)
+        assert is_timeout_risk(move_by, threshold_hours=5) is True
+
+    def test_beyond_threshold_returns_false(self):
+        move_by = datetime.now(tz=UTC) + td(hours=10)
+        assert is_timeout_risk(move_by, threshold_hours=5) is False
+
+    def test_past_deadline_returns_true(self):
+        move_by = datetime.now(tz=UTC) - td(hours=1)
+        assert is_timeout_risk(move_by, threshold_hours=5) is True
+
+    def test_at_threshold_returns_true(self):
+        # Exactly at threshold (within tolerance)
+        move_by = datetime.now(tz=UTC) + td(hours=5)
+        assert is_timeout_risk(move_by, threshold_hours=5) is True
+
+    def test_just_beyond_threshold_returns_false(self):
+        move_by = datetime.now(tz=UTC) + td(hours=5, minutes=5)
+        assert is_timeout_risk(move_by, threshold_hours=5) is False

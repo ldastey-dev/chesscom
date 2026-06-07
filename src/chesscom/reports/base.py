@@ -94,9 +94,7 @@ class BaseReport(ABC):
                 name=sheet_name,
                 dataframe=df,
                 hyperlink_column=hyperlink_col,
-                hyperlink_url_template=(
-                    _CHESSCOM_PROFILE_URL if hyperlink_col else None
-                ),
+                hyperlink_url_template=(_CHESSCOM_PROFILE_URL if hyperlink_col else None),
             )
         ]
 

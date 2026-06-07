@@ -21,6 +21,10 @@ Optional:
   EXCLUSION_CLUB      Club slug whose members are excluded from the prospect
                       report (defaults to ``None``; previously hard-coded as
                       ``"team-scotland"``).
+  TIMEOUT_THRESHOLD_HOURS
+                      Number of hours remaining below which an in-progress
+                      game is flagged as at risk of timing out.  Parsed to
+                      ``float``; defaults to ``5.0`` if blank.
 """
 
 from __future__ import annotations
@@ -45,6 +49,9 @@ class AppConfig:
         prospect_clubs: Ordered list of club slugs to inspect for prospects.
         exclusion_club: Optional club slug whose members are excluded from
             the prospect report.
+        timeout_threshold_hours: Number of hours remaining on the clock
+            below which a game is flagged as at risk of timing out.
+            Defaults to ``5.0``.
     """
 
     club_ref: str
@@ -53,6 +60,7 @@ class AppConfig:
     match_id: str | None = field(default=None)
     prospect_clubs: list[str] = field(default_factory=list)
     exclusion_club: str | None = field(default=None)
+    timeout_threshold_hours: float = field(default=5.0)
 
     # ------------------------------------------------------------------
     # Factory
@@ -80,9 +88,7 @@ class AppConfig:
             missing.append("CLUB_NAME")
 
         if missing:
-            raise ValueError(
-                f"Missing required environment variable(s): {', '.join(missing)}"
-            )
+            raise ValueError(f"Missing required environment variable(s): {', '.join(missing)}")
 
         # --- optional fields ------------------------------------------------
         data_analysis_year: int | None = None
@@ -102,6 +108,16 @@ class AppConfig:
 
         exclusion_club = os.getenv("EXCLUSION_CLUB", "").strip() or None
 
+        timeout_threshold_hours = 5.0
+        raw_threshold = os.getenv("TIMEOUT_THRESHOLD_HOURS", "").strip()
+        if raw_threshold:
+            try:
+                timeout_threshold_hours = float(raw_threshold)
+            except ValueError as exc:
+                raise ValueError(
+                    f"TIMEOUT_THRESHOLD_HOURS must be a number; got '{raw_threshold}'"
+                ) from exc
+
         return cls(
             club_ref=club_ref,
             club_name=club_name,
@@ -109,4 +125,5 @@ class AppConfig:
             match_id=match_id,
             prospect_clubs=prospect_clubs,
             exclusion_club=exclusion_club,
+            timeout_threshold_hours=timeout_threshold_hours,
         )

@@ -275,3 +275,204 @@ class TestMainOutput:
             main(["member-summary"])
         captured = capsys.readouterr()
         assert "Execution time" in captured.out
+
+
+# ===========================================================================
+# build_parser — timeout-check subcommand
+# ===========================================================================
+
+
+class TestTimeoutCheckParser:
+    def test_timeout_check_subcommand(self):
+        args = build_parser().parse_args(["timeout-check", "12345"])
+        assert args.subcommand == "timeout-check"
+        assert args.match_ids == ["12345"]
+
+    def test_timeout_check_multiple_ids(self):
+        args = build_parser().parse_args(["timeout-check", "111", "222", "333"])
+        assert args.match_ids == ["111", "222", "333"]
+
+    def test_timeout_check_all_keyword(self):
+        args = build_parser().parse_args(["timeout-check", "all"])
+        assert args.match_ids == ["all"]
+
+    def test_timeout_check_threshold_flag(self):
+        args = build_parser().parse_args(["timeout-check", "999", "--threshold", "10"])
+        assert args.threshold == 10.0
+
+    def test_timeout_check_threshold_defaults_to_none(self):
+        args = build_parser().parse_args(["timeout-check", "999"])
+        assert args.threshold is None
+
+    def test_timeout_check_no_ids_exits(self):
+        with pytest.raises(SystemExit):
+            build_parser().parse_args(["timeout-check"])
+
+
+# ===========================================================================
+# build_parser — common CLI args
+# ===========================================================================
+
+
+class TestCommonCliArgs:
+    def test_club_ref_flag(self):
+        args = build_parser().parse_args(["member-summary", "--club-ref", "my-club"])
+        assert args.club_ref == "my-club"
+
+    def test_club_name_flag(self):
+        args = build_parser().parse_args(["member-summary", "--club-name", "My Club"])
+        assert args.club_name == "My Club"
+
+    def test_club_ref_defaults_to_none(self):
+        args = build_parser().parse_args(["member-summary"])
+        assert args.club_ref is None
+
+    def test_year_flag_on_match_participation(self):
+        args = build_parser().parse_args(["match-participation", "--year", "2025"])
+        assert args.year == 2025
+
+    def test_clubs_flag_on_prospects(self):
+        args = build_parser().parse_args(["prospects", "--clubs", "club-a", "club-b"])
+        assert args.clubs == ["club-a", "club-b"]
+
+    def test_exclusion_club_flag_on_prospects(self):
+        args = build_parser().parse_args(["prospects", "--exclusion-club", "home-club"])
+        assert args.exclusion_club == "home-club"
+
+    def test_common_args_available_on_all_subcommands(self):
+        for subcmd_argv in [
+            ["member-summary", "--club-ref", "x"],
+            ["match-participation", "--club-ref", "x"],
+            ["prospects", "--club-ref", "x"],
+            ["match-eligibility", "--club-ref", "x"],
+            ["timeout-check", "all", "--club-ref", "x"],
+        ]:
+            args = build_parser().parse_args(subcmd_argv)
+            assert args.club_ref == "x"
+
+
+# ===========================================================================
+# main() — CLI override precedence
+# ===========================================================================
+
+
+class TestCliOverridePrecedence:
+    def test_club_ref_cli_overrides_env(self):
+        config = _make_config(club_ref="env-club")
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.MemberSummaryReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["member-summary", "--club-ref", "cli-club"])
+
+        passed_config = mock_cls.call_args[0][1]
+        assert passed_config.club_ref == "cli-club"
+
+    def test_env_used_when_no_cli_flag(self):
+        config = _make_config(club_ref="env-club")
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.MemberSummaryReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["member-summary"])
+
+        passed_config = mock_cls.call_args[0][1]
+        assert passed_config.club_ref == "env-club"
+
+    def test_year_cli_overrides_env(self):
+        config = _make_config(data_analysis_year=2024)
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.MatchParticipationReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["match-participation", "--year", "2025"])
+
+        passed_config = mock_cls.call_args[0][1]
+        assert passed_config.data_analysis_year == 2025
+
+
+# ===========================================================================
+# main() — timeout-check routing
+# ===========================================================================
+
+
+class TestTimeoutCheckRouting:
+    def test_timeout_check_runs_correct_report(self):
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+        mock_instance.format_console_summary.return_value = "No issues"
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=_make_config()),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.TimeoutCheckReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["timeout-check", "999"])
+
+        mock_cls.assert_called_once()
+        mock_instance.run.assert_called_once()
+
+    def test_timeout_check_prints_console_summary(self, capsys):
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+        mock_instance.format_console_summary.return_value = "Summary text here"
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=_make_config()),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.TimeoutCheckReport", return_value=mock_instance),
+        ):
+            main(["timeout-check", "999"])
+
+        captured = capsys.readouterr()
+        assert "Summary text here" in captured.out
+
+    def test_timeout_check_passes_match_ids(self):
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+        mock_instance.format_console_summary.return_value = ""
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=_make_config()),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.TimeoutCheckReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["timeout-check", "111", "222"])
+
+        _, kwargs = mock_cls.call_args
+        assert kwargs["match_ids"] == ["111", "222"]
+
+    def test_timeout_check_threshold_overrides_config(self):
+        config = _make_config()
+        mock_instance = MagicMock()
+        mock_instance.run.return_value = "output/test.xlsx"
+        mock_instance.format_console_summary.return_value = ""
+
+        with (
+            patch("chesscom.cli.load_dotenv"),
+            patch("chesscom.cli.AppConfig.from_env", return_value=config),
+            patch("chesscom.cli.ChessComClient"),
+            patch("chesscom.cli.TimeoutCheckReport", return_value=mock_instance) as mock_cls,
+        ):
+            main(["timeout-check", "999", "--threshold", "24"])
+
+        passed_config = mock_cls.call_args[0][1]
+        assert passed_config.timeout_threshold_hours == 24.0
