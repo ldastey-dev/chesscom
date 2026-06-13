@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Python tools for managing a Chess.com club — member reports, match participation, prospect lists, and match eligibility."
 requires-python = ">=3.11"
 dependencies = [
-    "numpy~=2.4.0",
+    "numpy~=2.4.6",
     "pandas~=3.0.3",
     "requests~=2.34.2",
     "openpyxl~=3.1.5",
