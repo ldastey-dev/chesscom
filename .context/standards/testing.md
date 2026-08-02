@@ -25,6 +25,10 @@ Every layer must pass before code is merged. No exceptions.
 
 - **Minimum 90 % line coverage** is enforced on every PR via CI.
 - Coverage must **never decrease** between commits. New code without tests fails the gate.
+- **Integration tests are a mandatory gate.** The suite under `tests/integration/`
+  mocks all HTTP via `responses` (fully offline) and runs both as part of the default
+  `pytest` run and as a dedicated required step in CI. A failing integration test fails
+  the pipeline and blocks merge — they must always be validated, never skipped.
 - Run locally:
   ```bash
   # Generic pattern — substitute your runner and package

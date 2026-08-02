@@ -5,6 +5,12 @@
 Every pull request to `main` must pass a fully automated pipeline. No exceptions,
 no manual override, no "I'll fix it in the next PR."
 
+> **Project rule (chesscom):** integration tests in `tests/integration/` are a
+> mandatory CI gate. They are fully mocked with `responses` (offline) and run as a
+> dedicated required step in `.github/workflows/ci.yml`, in addition to the combined
+> coverage run. The pipeline must fail — and merge is blocked — if any integration
+> test fails. Always validate them when checking changes; never skip them.
+
 ---
 
 ## 1 · Placeholder Reference
