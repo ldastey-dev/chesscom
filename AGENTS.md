@@ -43,6 +43,9 @@ pytest
 # Run tests with coverage
 pytest --cov=src --cov-report=term-missing
 
+# Run the mandatory integration-test gate explicitly (mocked, offline)
+pytest tests/integration -v
+
 # Lint
 ruff check .
 
@@ -262,10 +265,14 @@ The following standards are non-negotiable. Do not weaken them. Detailed guidanc
 - **No `os.getenv()` outside `config.py`** — always read configuration through
   `AppConfig`. Violations break the single-source-of-truth pattern.
 
-- **Integration tests require network access** — tests in `tests/integration/`
-  make live calls to `api.chess.com`. Never run them in CI without a network.
-  Unit tests in `tests/unit/` must be fully offline; use `responses` to mock
-  HTTP, never `unittest.mock.patch` on `requests` directly.
+- **Integration tests are a mandatory, offline pipeline gate** — tests in
+  `tests/integration/` mock every HTTP call with the `responses` library, so they
+  run fully offline with **no live network access** to `api.chess.com`. They run
+  automatically as part of `pytest` (`testpaths = ["tests"]`) and as a dedicated,
+  required step in CI; the pipeline **must fail** if any integration test fails, and
+  they must always be run when validating changes — never skip them. Unit tests in
+  `tests/unit/` must likewise be fully offline; use `responses` to mock HTTP, never
+  `unittest.mock.patch` on `requests` directly.
 
 - **Don't commit generated output** — the `output/` directory is git-ignored.
   Never add `.xlsx` files to version control.

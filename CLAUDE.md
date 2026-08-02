@@ -20,4 +20,7 @@ Assessment, review, planning, and refactoring playbooks are available as Claude 
 - **Chess.com API domain knowledge** — the public API (`api.chess.com/pub`) is unauthenticated. All endpoint methods live in `ChessComClient`. The Chrome `User-Agent` header is required and must not be removed.
 - **Five report types** — `member-summary`, `match-participation`, `prospects`, `match-eligibility`, `timeout-check`. New report types must follow the `BaseReport` subclass pattern and be registered in `cli.py`.
 - **Environment variables drive all configuration** — every setting is in `.env.template`. New settings must be added to `AppConfig` in `config.py` first; never use `os.getenv()` directly.
-- **Verify tests pass before marking work complete** — run `pytest` after any behaviour change.
+- **Verify tests pass before marking work complete** — run the full `pytest` suite
+  (which includes `tests/integration/`) after any behaviour change. Integration tests
+  are mocked with `responses` (fully offline) and are a **mandatory** pipeline gate;
+  always validate them and never skip them.
