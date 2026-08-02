@@ -59,7 +59,9 @@ class TestMemberFromApiResponse:
         assert isinstance(member.last_online, datetime)
         assert member.last_online == datetime.fromtimestamp(1700000000, tz=UTC)
 
-    def test_joined_club_none_when_not_provided(self, player_profile_response, player_stats_response):
+    def test_joined_club_none_when_not_provided(
+        self, player_profile_response, player_stats_response
+    ):
         member = Member.from_api_response(
             profile=player_profile_response,
             stats=player_stats_response,
@@ -125,9 +127,7 @@ class TestMemberFromApiResponse:
         member = Member.from_api_response(profile=profile, stats=player_stats_response)
         assert member.fide_title == ""
 
-    def test_timeout_percent_defaults_to_zero_when_record_missing(
-        self, player_profile_response
-    ):
+    def test_timeout_percent_defaults_to_zero_when_record_missing(self, player_profile_response):
         stats = {"chess_daily": {"last": {"rating": 1200}}}
         member = Member.from_api_response(profile=player_profile_response, stats=stats)
         assert member.timeout_percent == 0.0
@@ -211,9 +211,7 @@ class TestMatchFromApiResponse:
         assert match.variant == "chess960"
 
     def test_standard_chess_variant(self, match_detail_response_team1):
-        match = Match.from_api_response(
-            match_detail_response_team1, "1", "http://x", "Test Club"
-        )
+        match = Match.from_api_response(match_detail_response_team1, "1", "http://x", "Test Club")
         assert match.variant == "chess"
 
     def test_no_max_rating_returns_none(self):
@@ -245,7 +243,12 @@ class TestMatchFromApiResponse:
             "name": "Other Match",
             "settings": {"rules": "chess", "variant": ""},
             "teams": {
-                "team1": {"name": "Club A", "players": [{"username": "x", "played_as_white": "win", "played_as_black": "win"}]},
+                "team1": {
+                    "name": "Club A",
+                    "players": [
+                        {"username": "x", "played_as_white": "win", "played_as_black": "win"}
+                    ],
+                },
                 "team2": {"name": "Club B", "players": []},
             },
         }

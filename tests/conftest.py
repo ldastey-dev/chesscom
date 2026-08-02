@@ -101,8 +101,16 @@ def match_detail_response_team1():
             "team1": {
                 "name": "Test Club",
                 "players": [
-                    {"username": "Alice", "played_as_white": "win", "played_as_black": "checkmated"},
-                    {"username": "Bob", "played_as_white": "in progress", "played_as_black": "timeout"},
+                    {
+                        "username": "Alice",
+                        "played_as_white": "win",
+                        "played_as_black": "checkmated",
+                    },
+                    {
+                        "username": "Bob",
+                        "played_as_white": "in progress",
+                        "played_as_black": "timeout",
+                    },
                 ],
             },
             "team2": {
@@ -131,7 +139,11 @@ def match_detail_response_team2():
             "team2": {
                 "name": "Test Club",
                 "players": [
-                    {"username": "Alice", "played_as_white": "win", "played_as_black": "checkmated"},
+                    {
+                        "username": "Alice",
+                        "played_as_white": "win",
+                        "played_as_black": "checkmated",
+                    },
                 ],
             },
         },
@@ -147,7 +159,9 @@ def match_detail_response_chess960():
         "teams": {
             "team1": {
                 "name": "Test Club",
-                "players": [{"username": "Alice", "played_as_white": "win", "played_as_black": "win"}],
+                "players": [
+                    {"username": "Alice", "played_as_white": "win", "played_as_black": "win"}
+                ],
             },
             "team2": {
                 "name": "Opponent Club",

@@ -7,11 +7,12 @@
 ## Project Overview
 
 A Python CLI tool for Chess.com club administrators. It fetches data from the
-Chess.com public API and generates Excel workbooks covering four report types:
+Chess.com public API and generates Excel workbooks covering five report types:
 club member summaries, match participation analysis, prospect identification,
-and match eligibility checking. Club admins use it to manage rosters, track
-member contributions, and identify new member candidates — delivering the kind
-of structured reporting that the Chess.com UI does not provide out of the box.
+match eligibility checking, and timeout monitoring. Club admins use it to
+manage rosters, track member contributions, identify new member candidates,
+and monitor in-progress matches for timeout risk — delivering the kind of
+structured reporting that the Chess.com UI does not provide out of the box.
 
 ---
 
@@ -73,7 +74,7 @@ Dependencies point inward. This is non-negotiable.
 ```text
 Presentation   cli.py, __main__.py
     ↓
-Application    reports/*.py  (BaseReport ABC + 4 concrete reports)
+Application    reports/*.py  (BaseReport ABC + 5 concrete reports)
     ↓
 Domain         domain/models.py, domain/services.py
     ↓
@@ -144,7 +145,8 @@ chesscom/
 │           ├── match_eligibility.py
 │           ├── match_participation.py
 │           ├── member_summary.py
-│           └── prospect.py
+│           ├── prospect.py
+│           └── timeout_check.py
 ├── tests/
 │   ├── conftest.py
 │   ├── integration/                # Live-API tests (require network access)
@@ -183,7 +185,8 @@ chesscom/
   subcommand handler in `cli.py`.
 
 - **Adding a config variable:** Add the field to `AppConfig` in `config.py` and
-  parse it in `from_env()`. Never read env vars anywhere else.
+  parse it in `from_env()`. Never read env vars anywhere else. Add a
+  corresponding CLI flag in `cli.py` and handle it in `_apply_cli_overrides()`.
 
 - **Adding an API endpoint:** Add a method to `ChessComClient` in
   `api/client.py`. Route all HTTP calls through `_get()`.

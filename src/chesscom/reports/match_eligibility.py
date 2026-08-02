@@ -60,7 +60,9 @@ class MatchEligibilityReport(BaseReport):
         # --- Match metadata -------------------------------------------------
         match_data = self.client.get_match(match_id)
         match = Match.from_api_response(
-            match_data, match_id, f"https://api.chess.com/pub/match/{match_id}",
+            match_data,
+            match_id,
+            f"https://api.chess.com/pub/match/{match_id}",
             self.config.club_name,
         )
         variant = match.variant
@@ -70,9 +72,7 @@ class MatchEligibilityReport(BaseReport):
         self._variant = variant
 
         # --- Participants already signed up ---------------------------------
-        signed_up_lower: set[str] = {
-            p.username.lower() for p in match.participants
-        }
+        signed_up_lower: set[str] = {p.username.lower() for p in match.participants}
 
         # --- All club members with full Member objects ----------------------
         raw_members = self._all_club_members()
@@ -92,18 +92,18 @@ class MatchEligibilityReport(BaseReport):
         # --- Build result rows ----------------------------------------------
         results: list[dict] = []
         for m in members:
-            chess960_display = (
-                m.chess960_rating if m.chess960_rating is not None else "Unrated"
+            chess960_display = m.chess960_rating if m.chess960_rating is not None else "Unrated"
+            results.append(
+                {
+                    "Username": m.username,
+                    "Daily Rating": m.daily_rating if m.daily_rating is not None else "Unrated",
+                    "Chess960 Rating": chess960_display,
+                    "Variant": variant.upper(),
+                    "Last Online": _fmt(m.last_online),
+                    "Timeout Percentage": m.timeout_percent,
+                    "Signed Up": "Yes" if m.username.lower() in signed_up_lower else "No",
+                }
             )
-            results.append({
-                "Username": m.username,
-                "Daily Rating": m.daily_rating if m.daily_rating is not None else "Unrated",
-                "Chess960 Rating": chess960_display,
-                "Variant": variant.upper(),
-                "Last Online": _fmt(m.last_online),
-                "Timeout Percentage": m.timeout_percent,
-                "Signed Up": "Yes" if m.username.lower() in signed_up_lower else "No",
-            })
 
         return results
 

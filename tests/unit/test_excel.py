@@ -53,9 +53,7 @@ class TestFileCreation:
         output_dir = tmp_path / "deep" / "nested" / "dir"
         assert not output_dir.exists()
         sheet = SheetConfig(name="Data", dataframe=_simple_df())
-        ExcelReportWriter(
-            output_dir=str(output_dir), base_name="R", sheets=[sheet]
-        ).write()
+        ExcelReportWriter(output_dir=str(output_dir), base_name="R", sheets=[sheet]).write()
         assert output_dir.exists()
 
     def test_write_empty_dataframe_still_creates_file(self, tmp_path):

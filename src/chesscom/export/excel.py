@@ -135,15 +135,11 @@ class ExcelReportWriter:
         candidate = os.path.join(self.output_dir, f"{self.base_name}.xlsx")
         counter = 1
         while os.path.exists(candidate):
-            candidate = os.path.join(
-                self.output_dir, f"{self.base_name}_{counter}.xlsx"
-            )
+            candidate = os.path.join(self.output_dir, f"{self.base_name}_{counter}.xlsx")
             counter += 1
         return candidate
 
-    def _apply_hyperlinks(
-        self, writer: pd.ExcelWriter, sheet: SheetConfig
-    ) -> None:
+    def _apply_hyperlinks(self, writer: pd.ExcelWriter, sheet: SheetConfig) -> None:
         """Inject hyperlinks into *sheet.hyperlink_column* cells.
 
         Row 1 is the header; data rows start at row 2.

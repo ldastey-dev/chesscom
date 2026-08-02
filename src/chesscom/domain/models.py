@@ -69,13 +69,9 @@ class Member:
         chess960_daily = stats.get("chess960_daily") or {}
         chess960_last = chess960_daily.get("last") or {}
         chess960_rating_raw = chess960_last.get("rating")
-        chess960_rating = (
-            chess960_rating_raw if isinstance(chess960_rating_raw, int) else None
-        )
+        chess960_rating = chess960_rating_raw if isinstance(chess960_rating_raw, int) else None
 
-        timeout_percent = float(
-            (chess_daily.get("record") or {}).get("timeout_percent", 0.0)
-        )
+        timeout_percent = float((chess_daily.get("record") or {}).get("timeout_percent", 0.0))
 
         joined_club: datetime | None = (
             datetime.fromtimestamp(joined_club_timestamp, tz=UTC)
@@ -90,12 +86,8 @@ class Member:
             daily_rating=daily_rating,
             chess960_rating=chess960_rating,
             timeout_percent=timeout_percent,
-            joined_chess_com=datetime.fromtimestamp(
-                profile.get("joined", 0), tz=UTC
-            ),
-            last_online=datetime.fromtimestamp(
-                profile.get("last_online", 0), tz=UTC
-            ),
+            joined_chess_com=datetime.fromtimestamp(profile.get("joined", 0), tz=UTC),
+            last_online=datetime.fromtimestamp(profile.get("last_online", 0), tz=UTC),
             joined_club=joined_club,
         )
 
@@ -200,9 +192,7 @@ class Match:
             match_id=match_id,
             name=data.get("name", ""),
             url=url,
-            start_time=datetime.fromtimestamp(
-                data.get("start_time", 0), tz=UTC
-            ),
+            start_time=datetime.fromtimestamp(data.get("start_time", 0), tz=UTC),
             max_rating=max_rating,
             variant="chess960" if is_chess960 else "chess",
             participants=participants,
@@ -240,3 +230,35 @@ class MemberParticipation:
     timeouts: int
     participation_pct: float
     win_rate_pct: float
+
+
+@dataclass
+class TimeoutAlert:
+    """Records a timeout or near-timeout condition for a player in a match.
+
+    Emitted by the timeout-check report when a team member has either
+    already timed out or has an in-progress game where ``move_by`` is
+    within the configured threshold.
+
+    Attributes:
+        match_name: Human-readable match name.
+        match_id: Numeric match identifier as a string.
+        username: Chess.com username of the affected player.
+        board_url: Fully-qualified API URL for the board.
+        colour: ``"white"`` or ``"black"`` — the side the player was on.
+        status: ``"timed_out"`` (game already lost on time) or
+            ``"at_risk"`` (clock running low).
+        move_by: UTC datetime when the next move must be made, or ``None``
+            for completed timeouts.
+        hours_remaining: Hours until ``move_by``, or ``None`` for completed
+            timeouts.
+    """
+
+    match_name: str
+    match_id: str
+    username: str
+    board_url: str
+    colour: str
+    status: str
+    move_by: datetime | None
+    hours_remaining: float | None

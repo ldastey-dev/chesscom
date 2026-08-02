@@ -184,3 +184,19 @@ class ChessComClient:
         return self._get(
             match_id_or_url if match_id_or_url.startswith("http") else f"match/{match_id_or_url}"
         )
+
+    def get_match_board(self, board_url: str) -> dict:
+        """Return board detail for a team match board.
+
+        The board endpoint returns the individual games on a specific board,
+        including ``move_by`` timestamps for in-progress daily games.
+
+        Args:
+            board_url: Fully-qualified board URL as returned in the player's
+                ``board`` field from a match detail response (e.g.
+                ``"https://api.chess.com/pub/match/12345/1"``).
+
+        Returns:
+            Board detail dict containing ``board_scores`` and ``games``.
+        """
+        return self._get(board_url)

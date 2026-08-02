@@ -18,6 +18,6 @@ Assessment, review, planning, and refactoring playbooks are available as Claude 
 - **Plan mode for non-trivial tasks** — if a task has 3+ steps or architectural impact, write a plan to `tasks/todo.md` before implementing. See `.context/conventions/workflow.md`.
 - **No type-checker or security-audit tool** — `mypy` and `bandit` are not configured. Do not assume they exist or add them without discussion.
 - **Chess.com API domain knowledge** — the public API (`api.chess.com/pub`) is unauthenticated. All endpoint methods live in `ChessComClient`. The Chrome `User-Agent` header is required and must not be removed.
-- **Four report types only** — `member-summary`, `match-participation`, `prospects`, `match-eligibility`. New report types must follow the `BaseReport` subclass pattern and be registered in `cli.py`.
+- **Five report types** — `member-summary`, `match-participation`, `prospects`, `match-eligibility`, `timeout-check`. New report types must follow the `BaseReport` subclass pattern and be registered in `cli.py`.
 - **Environment variables drive all configuration** — every setting is in `.env.template`. New settings must be added to `AppConfig` in `config.py` first; never use `os.getenv()` directly.
 - **Verify tests pass before marking work complete** — run `pytest` after any behaviour change.

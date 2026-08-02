@@ -7,6 +7,7 @@ no file I/O.  This makes them straightforward to unit-test without mocking.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Literal
 
 from chesscom.domain.models import Match, MatchResult, Member, MemberParticipation
@@ -214,11 +215,7 @@ def build_participation_stats(
 
     for match in matches:
         player_result: MatchResult | None = next(
-            (
-                p
-                for p in match.participants
-                if p.username.lower() == username_lower
-            ),
+            (p for p in match.participants if p.username.lower() == username_lower),
             None,
         )
         if player_result is None:
@@ -238,9 +235,7 @@ def build_participation_stats(
                 timeouts += 1
                 losses += 1  # timeouts count as losses for win-rate
 
-    participation_pct = calculate_participation_percentage(
-        total_matches, matches_participated
-    )
+    participation_pct = calculate_participation_percentage(total_matches, matches_participated)
     win_rate_pct = calculate_win_rate(wins, losses, draws)
 
     return MemberParticipation(
@@ -255,3 +250,48 @@ def build_participation_stats(
         participation_pct=participation_pct,
         win_rate_pct=win_rate_pct,
     )
+
+
+# ---------------------------------------------------------------------------
+# Timeout risk analysis
+# ---------------------------------------------------------------------------
+
+
+def calculate_hours_remaining(move_by: datetime, now: datetime | None = None) -> float:
+    """Return the number of hours between *now* and *move_by*.
+
+    A negative value means the deadline has already passed.
+
+    Args:
+        move_by: UTC datetime when the next move must be made.
+        now: Reference time.  Defaults to ``datetime.now(tz=UTC)`` when
+            ``None`` — pass explicitly in tests for determinism.
+
+    Returns:
+        Hours remaining as a float, rounded to two decimal places.
+    """
+    if now is None:
+        now = datetime.now(tz=UTC)
+    delta = move_by - now
+    return round(delta.total_seconds() / 3600, 2)
+
+
+def is_timeout_risk(
+    move_by: datetime,
+    threshold_hours: float,
+    now: datetime | None = None,
+) -> bool:
+    """Return ``True`` when *move_by* is within *threshold_hours* of *now*.
+
+    A ``move_by`` that has already passed is always considered at risk.
+
+    Args:
+        move_by: UTC datetime when the next move must be made.
+        threshold_hours: Maximum acceptable hours remaining.
+        now: Reference time.  Defaults to ``datetime.now(tz=UTC)`` when
+            ``None``.
+
+    Returns:
+        ``True`` if the remaining time is at or below the threshold.
+    """
+    return calculate_hours_remaining(move_by, now) <= threshold_hours

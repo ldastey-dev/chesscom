@@ -65,9 +65,7 @@ class MemberSummaryReport(BaseReport):
             "Joined Club": _fmt(m.joined_club),
             "Last Online": _fmt(m.last_online),
             "Daily Rating": m.daily_rating if m.daily_rating is not None else "Unrated",
-            "Chess960 Rating": (
-                m.chess960_rating if m.chess960_rating is not None else "Unrated"
-            ),
+            "Chess960 Rating": (m.chess960_rating if m.chess960_rating is not None else "Unrated"),
             "Timeout Percentage": m.timeout_percent,
         }
 

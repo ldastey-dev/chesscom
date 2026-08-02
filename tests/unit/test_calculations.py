@@ -5,7 +5,6 @@ Originally these tested the duplicated functions in club_contribution_report.py
 and utils. Now they test the canonical implementations in the services module.
 """
 
-
 from chesscom.domain.services import calculate_participation_percentage, calculate_win_rate
 
 # ---------------------------------------------------------------------------
