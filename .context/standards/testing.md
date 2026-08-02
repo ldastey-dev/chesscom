@@ -89,8 +89,7 @@ Avoid meaningless names: `test1`, `test_it`, `test_thing`.
 - Skip automatically when credentials are unavailable:
   ```python
   pytestmark = pytest.mark.skipif(
-      not os.environ.get("[AUTH_ENV_VAR]"),
-      reason="Credentials not available"
+      not os.environ.get("[AUTH_ENV_VAR]"), reason="Credentials not available"
   )
   ```
 - Never run against production. Use sandboxed / ephemeral environments.
@@ -176,12 +175,15 @@ Use parametrised tests to cover multiple inputs without duplicating logic:
 
 ```python
 # Python (pytest)
-@pytest.mark.parametrize("input_val,expected", [
-    ("valid_token", True),
-    ("",            False),
-    (None,          False),
-    ("expired",     False),
-])
+@pytest.mark.parametrize(
+    "input_val,expected",
+    [
+        ("valid_token", True),
+        ("", False),
+        (None, False),
+        ("expired", False),
+    ],
+)
 def test_validate_token(input_val, expected):
     assert validate_token(input_val) is expected
 ```
